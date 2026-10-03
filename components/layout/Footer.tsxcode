@@ -1,0 +1,77 @@
+import Link from "next/link";
+
+const quickLinks = [
+  { label: "About", href: "/about" },
+  { label: "Products", href: "/products" },
+  { label: "Brands", href: "/brands" },
+  { label: "Services", href: "/services" },
+  { label: "Gallery", href: "/gallery" },
+  { label: "Contact", href: "/contact" },
+];
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-[var(--border)] bg-[var(--brand-primary)] text-white">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+        <div className="grid gap-10 md:grid-cols-3">
+          <div>
+            <div className="mb-4 text-xl font-bold">B & B Machinery</div>
+
+            <p className="max-w-md text-sm leading-6 text-slate-300">
+              Machinery, machinery parts and technical services for customers
+              in Pokhara and Western Nepal.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-200">
+              Quick Links
+            </h2>
+
+            <nav className="grid grid-cols-2 gap-3 text-sm text-slate-300">
+              {quickLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="transition-colors hover:text-[var(--brand-accent)]"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div>
+            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-200">
+              Contact
+            </h2>
+
+            <div className="space-y-2 text-sm leading-6 text-slate-300">
+              <p>Baglung Buspark, Pokhara</p>
+              <p>
+                <a
+                  href="tel:+9779856088600"
+                  className="transition-colors hover:text-[var(--brand-accent)]"
+                >
+                  +977 9856088600
+                </a>
+              </p>
+              <p>
+                <a
+                  href="mailto:bnbmachinery@gmail.com"
+                  className="transition-colors hover:text-[var(--brand-accent)]"
+                >
+                  bnbmachinery@gmail.com
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 border-t border-white/10 pt-6 text-sm text-slate-400">
+          © {new Date().getFullYear()} B & B Machinery. All rights reserved.
+        </div>
+      </div>
+    </footer>
+  );
+}
