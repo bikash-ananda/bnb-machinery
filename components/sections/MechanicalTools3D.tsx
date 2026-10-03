@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const mainMachine = {
@@ -776,9 +777,9 @@ export default function MechanicalTools3D() {
           </p>
 
           <div className="hero-actions">
-            <a href="/products" className="primary-button">
+            <Link href="/products" className="primary-button">
               Explore Machinery
-            </a>
+            </Link>
 
             <a href="/contact" className="secondary-button">
               Request a Quote

@@ -1,0 +1,31 @@
+warning: in the working copy of 'app/api/staff/inventory/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/globals.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/staff/(protected)/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ai/Chatbot.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/FloatingContact.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/Footer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/sections/Hero3D.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/sections/MechanicalTools3D.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'data/brands.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'data/categories.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'data/company.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'data/products.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'data/services.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'next.config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'pnpm-workspace.yaml', LF will be replaced by CRLF the next time Git touches it
+ app/about/page.tsx                        |  20 [31m--[m
+ app/api/staff/inventory/route.ts          | 265 [32m++++++++[m[31m-------[m
+ app/brands/page.tsx                       |  20 [31m--[m
+ app/globals.css                           |  42 [32m++[m[31m-[m
+ app/layout.tsx                            |   6 [32m+[m[31m-[m
+ app/page.tsx                              | 523 [31m----------------------------[m
+ app/products/[slug]/page.tsx              | 123 [31m-------[m
+ app/products/page.tsx                     | 134 [31m--------[m
+ app/services/page.tsx                     |  38 [31m---[m
+ app/staff/(protected)/page.tsx            | 123 [32m++++[m[31m---[m
+ components/ai/Chatbot.tsx                 | 543 [32m++++++++++++++++++++[m[31m----------[m
+ components/sections/MechanicalTools3D.tsx |   5 [32m+[m[31m-[m
+ data/products.ts                          |  22 [32m+[m[31m-[m
+ next.config.ts                            |  12 [32m+[m[31m-[m
+ 14 files changed, 646 insertions(+), 1230 deletions(-)

@@ -410,3 +410,43 @@ html[data-language="ne"] .lang-ne {
     animation: none !important;
   }
 }
+/* ===== Site colour tokens (fix: these were never defined) ===== */
+:root {
+  --brand-primary: #0b1b33;
+  --brand-secondary: #16294a;
+  --brand-accent: #f59e0b;
+  --surface: #f8fafc;
+  --surface-muted: #f1f5f9;
+  --border: #e2e8f0;
+  --text-muted: #64748b;
+}
+body {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* ===== Motion backgrounds (MotionBackdrop) ===== */
+@keyframes bnb-spin { to { transform: rotate(360deg); } }
+@keyframes bnb-drive { from { transform: translateX(-30vw); } to { transform: translateX(110vw); } }
+@keyframes bnb-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes bnb-rise { 0% { transform: translateY(0) rotate(0); opacity: 0; } 15% { opacity: 0.5; } 100% { transform: translateY(-110vh) rotate(200deg); opacity: 0; } }
+@keyframes bnb-belt { to { background-position: 80px 0; } }
+@keyframes bnb-roadmove { to { background-position: -72px 0; } }
+@keyframes bnb-cloud { from { transform: translateX(-20vw); } to { transform: translateX(120vw); } }
+@keyframes bnb-pulse { 0% { transform: scale(0.4); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes bnb-kenburns { from { transform: scale(1) translate(0, 0); } to { transform: scale(1.12) translate(-2%, -1%); } }
+.bnb-spin, .bnb-spin-rev, .bnb-spin-fast, .bnb-sway, .bnb-pulse { transform-box: fill-box; transform-origin: center; }
+.bnb-spin { animation: bnb-spin 28s linear infinite; }
+.bnb-spin-rev { animation: bnb-spin 36s linear infinite reverse; }
+.bnb-spin-fast { animation: bnb-spin 2.5s linear infinite; }
+.bnb-sway { transform-origin: 50% 100%; animation: bnb-sway 3.2s ease-in-out infinite; }
+.bnb-drive { animation: bnb-drive 24s linear infinite; }
+.bnb-rise { animation: bnb-rise 14s linear infinite; }
+.bnb-cloud { animation: bnb-cloud 70s linear infinite; }
+.bnb-pulse { animation: bnb-pulse 3s ease-out infinite; }
+.bnb-belt { background: repeating-linear-gradient(90deg, rgba(245,158,11,0.55) 0 28px, rgba(255,255,255,0.08) 28px 40px); animation: bnb-belt 1.2s linear infinite; }
+.bnb-road { background: repeating-linear-gradient(90deg, #fbbf24 0 36px, transparent 36px 72px); animation: bnb-roadmove 1s linear infinite; }
+.kenburns { animation: bnb-kenburns 18s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) {
+  .bnb-spin, .bnb-spin-rev, .bnb-spin-fast, .bnb-sway, .bnb-drive, .bnb-rise, .bnb-cloud, .bnb-pulse, .bnb-belt, .bnb-road, .kenburns { animation: none !important; }
+}

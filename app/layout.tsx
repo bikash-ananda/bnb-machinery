@@ -7,6 +7,7 @@ import {
 
 import "./globals.css";
 import Chatbot from "@/components/ai/Chatbot";
+import MobileBar from "@/components/layout/MobileBar";
 import FloatingContact from "@/components/layout/FloatingContact";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 
@@ -27,6 +28,8 @@ const nepaliFont = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_ORIGIN || "http://localhost:3000"),
+  openGraph: { type: "website", siteName: "B & B Machinery", locale: "en_NP", images: ["/images/company/shop.jpg"] },
   title: {
     default: "B & B Machinery | Machinery & Machinery Parts in Pokhara",
     template: "%s | B & B Machinery",
@@ -84,10 +87,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: languageScript }} />
       </head>
 
-      <body>
+      <body className="pb-12 sm:pb-0">
         <LanguageProvider>
           {children}
           <FloatingContact />
+          <MobileBar />
           <Chatbot />
         </LanguageProvider>
       </body>

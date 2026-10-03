@@ -1,8 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import { LocalizedField } from "@/components/i18n/LocalizedField";
 import { LocalizedText } from "@/components/i18n/LanguageProvider";
 import { getPublishedProduct } from "@/lib/server/inventory";
@@ -20,7 +18,6 @@ export default async function ProductPage({
 
   return (
     <>
-      <Header />
       <main className="min-h-screen bg-[var(--surface)]">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <Link href="/products" className="inline-flex min-h-11 items-center text-sm font-semibold text-[var(--brand-primary)]">
@@ -117,7 +114,6 @@ export default async function ProductPage({
           </div>
         </div>
       </main>
-      <Footer />
     </>
   );
 }
