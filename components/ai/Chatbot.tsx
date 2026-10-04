@@ -4,7 +4,9 @@ import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { company } from "@/data/company";
 import { greeting, hasDevanagari, respond, speakable, type Flow, type Lang, type Reply } from "@/lib/chat/brain";
+import { needsAI } from "@/lib/chat/hybrid";
 
 type Message = { id: number; role: "assistant" | "user"; reply?: Reply; content?: string };
 
@@ -26,8 +28,10 @@ function getSR(): RecCtor | null {
 }
 const noopSub = () => () => {};
 const T = (lang: Lang, en: string, ne: string) => (lang === "ne" ? ne : en);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
-const STORE = "bnb-chat-v3";
+const STORE = "bnb-chat-v4";
 const TEASER = "bnb-chat-teaser";
 
 export default function Chatbot() {
@@ -53,7 +57,6 @@ export default function Chatbot() {
   const [typing, setTyping] = useState(false);
   const [teaser, setTeaser] = useState(false);
 
-  // voice
   const [speakOn, setSpeakOn] = useState(false);
   const [call, setCall] = useState(false);
   const [status, setStatus] = useState<"idle" | "listening" | "speaking" | "thinking">("idle");
@@ -63,14 +66,20 @@ export default function Chatbot() {
   const idRef = useRef(Math.max(0, ...(saved?.messages ?? []).map((m) => m.id)) + 1);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const busy = useRef(false);
   const recRef = useRef<Rec | null>(null);
   const speechId = useRef(0);
+  const recId = useRef(0);
   const noSpeech = useRef(0);
   const callRef = useRef(false);
   const speakRef = useRef(false);
   const langRef = useRef<Lang>(lang);
   const sendRef = useRef<(t: string) => void>(() => {});
+  const aiState = useRef<"on" | "off">("on");
+  const serverVoice = useRef<"on" | "off">("on");
+  const audioEl = useRef<HTMLAudioElement | null>(null);
+  const recCleanup = useRef<(() => void) | null>(null);
+  const finishRec = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     langRef.current = lang;
@@ -99,14 +108,23 @@ export default function Chatbot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
   useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
+    recId.current++;
+    recCleanup.current?.();
     const r = recRef.current; recRef.current = null;
     try { r?.abort(); } catch {}
+    audioEl.current?.pause();
     try { window.speechSynthesis?.cancel(); } catch {}
   }, []);
 
-  /* ---------- voice helpers ---------- */
-  function speak(text: string, l: Lang, onDone?: () => void) {
+  const secureNote = (l: Lang) =>
+    T(l, "Voice needs a secure connection (https) or localhost. Please open the https version of the website.", "भ्वाइसका लागि सुरक्षित (https) कनेक्सन वा localhost चाहिन्छ। कृपया वेबसाइटको https संस्करण खोल्नुहोस्।");
+  const blockedNote = (l: Lang) =>
+    T(l, "Microphone is blocked. Allow microphone access in the browser address bar and try again.", "माइक्रोफोन बन्द छ। ब्राउजरको एड्रेस बारमा माइक्रोफोन अनुमति दिएर फेरि प्रयास गर्नुहोस्।");
+  const unsupportedNote = (l: Lang) =>
+    T(l, "Voice is not supported in this browser. Please type your question.", "यो ब्राउजरमा भ्वाइस चल्दैन। कृपया लेखेर सोध्नुहोस्।");
+
+  /* ---------- speaking ---------- */
+  function speakBrowser(text: string, l: Lang, onDone?: () => void) {
     if (!ttsOk || !text) { onDone?.(); return; }
     const synth = window.speechSynthesis;
     const myId = ++speechId.current;
@@ -119,12 +137,10 @@ export default function Chatbot() {
       if (voice) break;
     }
     if (l === "ne" && voices.length > 0 && !voice) {
-      setNote("यो उपकरणमा नेपाली आवाज छैन, त्यसैले उत्तर लेखिएर मात्र देखिन्छ। (Android Chrome मा वा Windows Settings > Speech मा नेपाली आवाज थप्नुहोस्।)");
+      setNote("यो उपकरणमा नेपाली आवाज छैन, त्यसैले उत्तर लेखिएर मात्र देखिन्छ।");
       onDone?.();
       return;
     }
-    if (l === "ne" && voice && !voice.lang.toLowerCase().startsWith("ne"))
-      setNote("नेपाली आवाज भेटिएन; हिन्दी आवाज प्रयोग भएको छ।");
     const u = new SpeechSynthesisUtterance(text);
     if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = l === "ne" ? "ne-NP" : "en-US"; }
     u.rate = 0.95;
@@ -139,20 +155,161 @@ export default function Chatbot() {
     synth.speak(u);
   }
 
-  function endCall() {
-    callRef.current = false;
-    setCall(false);
-    const r = recRef.current; recRef.current = null;
-    try { r?.abort(); } catch {}
-    speechId.current++;
-    try { window.speechSynthesis?.cancel(); } catch {}
-    setStatus("idle");
-    setInterim("");
+  async function speakServer(text: string, l: Lang, onDone?: () => void): Promise<boolean> {
+    const myId = ++speechId.current;
+    try {
+      const res = await fetch("/api/voice/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, lang: l }),
+      });
+      if (res.status === 503) { serverVoice.current = "off"; return false; }
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      if (myId !== speechId.current) return true;
+      const url = URL.createObjectURL(blob);
+      const a = audioEl.current ?? (audioEl.current = new Audio());
+      a.src = url;
+      a.onplay = () => { if (myId === speechId.current) setStatus("speaking"); };
+      const done = () => {
+        URL.revokeObjectURL(url);
+        if (myId !== speechId.current) return;
+        setStatus("idle");
+        onDone?.();
+      };
+      a.onended = done;
+      a.onerror = done;
+      await a.play();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
-  function startListening() {
+  function speak(text: string, l: Lang, onDone?: () => void) {
+    if (!text) { onDone?.(); return; }
+    if (serverVoice.current !== "off") {
+      void speakServer(text, l, onDone).then((ok) => { if (!ok) speakBrowser(text, l, onDone); });
+    } else {
+      speakBrowser(text, l, onDone);
+    }
+  }
+
+  /* ---------- listening ---------- */
+  function handleSilence() {
+    if (callRef.current) {
+      noSpeech.current += 1;
+      if (noSpeech.current >= 3) {
+        setNote(T(langRef.current, "I could not hear you, so the voice call ended.", "आवाज सुनिएन, त्यसैले भ्वाइस कल समाप्त भयो।"));
+        endCall();
+      } else {
+        setTimeout(() => { if (callRef.current) startListening(); }, 300);
+      }
+    } else {
+      setStatus("idle");
+    }
+  }
+
+  async function transcribe(blob: Blob, l: Lang): Promise<string | null> {
+    const ext = blob.type.includes("mp4") ? "mp4" : blob.type.includes("ogg") ? "ogg" : "webm";
+    const fd = new FormData();
+    fd.append("file", blob, `voice.${ext}`);
+    fd.append("lang", l);
+    try {
+      const res = await fetch("/api/voice/transcribe", { method: "POST", body: fd });
+      if (res.status === 503) return null;
+      if (!res.ok) return "";
+      const d = (await res.json()) as { text?: string };
+      return (d.text ?? "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  async function recordServer() {
+    const l0 = langRef.current;
+    if (!window.isSecureContext) { setNote(secureNote(l0)); endCall(); return; }
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined" || !AC) {
+      if (micOk) { listenBrowser(); return; }
+      setNote(unsupportedNote(l0)); endCall(); return;
+    }
+    recCleanup.current?.();
+    const myRec = ++recId.current;
+    setStatus("listening");
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch {
+      setNote(blockedNote(l0)); endCall(); return;
+    }
+    if (myRec !== recId.current) { stream.getTracks().forEach((t) => t.stop()); return; }
+
+    const mime = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"].find((m) => MediaRecorder.isTypeSupported(m));
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    const chunks: Blob[] = [];
+    mr.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    const ctx = new AC();
+    void ctx.resume();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 1024;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    const buf = new Uint8Array(analyser.fftSize);
+
+    let heard = false;
+    let silentSince = 0;
+    let noise = 0;
+    let finished = false;
+    const startedAt = Date.now();
+    const finish = () => { if (finished) return; finished = true; if (mr.state !== "inactive") mr.stop(); };
+    const stopAll = () => {
+      clearInterval(iv);
+      try { void ctx.close(); } catch {}
+      stream.getTracks().forEach((t) => t.stop());
+    };
+    const iv = setInterval(() => {
+      analyser.getByteTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) { const x = (buf[i] - 128) / 128; sum += x * x; }
+      const rms = Math.sqrt(sum / buf.length);
+      const now = Date.now();
+      const elapsed = now - startedAt;
+      if (elapsed < 400) { noise = Math.max(noise, rms); return; }
+      if (rms > Math.max(0.02, noise * 2.2)) { heard = true; silentSince = 0; }
+      else if (heard) {
+        if (!silentSince) silentSince = now;
+        else if (now - silentSince > 1300) finish();
+      }
+      if ((!heard && elapsed > 8000) || elapsed > 20000) finish();
+    }, 100);
+
+    finishRec.current = finish;
+    recCleanup.current = () => { finished = true; stopAll(); try { if (mr.state !== "inactive") mr.stop(); } catch {} };
+
+    mr.onstop = async () => {
+      stopAll();
+      finishRec.current = null;
+      if (myRec !== recId.current) return;
+      if (!heard || chunks.length === 0) { handleSilence(); return; }
+      setStatus("thinking");
+      const text = await transcribe(new Blob(chunks, { type: mr.mimeType || "audio/webm" }), langRef.current);
+      if (myRec !== recId.current) return;
+      if (text === null) {
+        serverVoice.current = "off";
+        if (micOk) { listenBrowser(); } else { setNote(unsupportedNote(langRef.current)); endCall(); }
+        return;
+      }
+      if (!text) { handleSilence(); return; }
+      noSpeech.current = 0;
+      sendRef.current(text);
+    };
+    mr.start();
+  }
+
+  function listenBrowser() {
     const SR = getSR();
-    if (!SR) { setNote(T(langRef.current, "Voice input needs Chrome or Edge.", "आवाजबाट सोध्न Chrome वा Edge चाहिन्छ।")); return; }
+    if (!SR) { setNote(unsupportedNote(langRef.current)); endCall(); return; }
     const old = recRef.current; recRef.current = null;
     try { old?.abort(); } catch {}
     speechId.current++;
@@ -173,57 +330,66 @@ export default function Chatbot() {
     };
     rec.onerror = (e) => {
       if (recRef.current !== rec) return;
-      const l = langRef.current;
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setNote(T(l, "Microphone is blocked. Allow microphone access in the browser address bar and try again.", "माइक्रोफोन बन्द छ। ब्राउजरको एड्रेस बारमा माइक्रोफोन अनुमति दिएर फेरि प्रयास गर्नुहोस्।"));
-        endCall();
-      } else if (e.error === "language-not-supported") {
-        setNote(T(l, "This browser does not support voice input in this language.", "यो ब्राउजरले यो भाषामा आवाज पहिचान गर्दैन।"));
-        endCall();
-      }
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") { setNote(blockedNote(langRef.current)); endCall(); }
+      else if (e.error === "language-not-supported") { setNote(T(langRef.current, "This browser does not support voice input in this language.", "यो ब्राउजरले यो भाषामा आवाज पहिचान गर्दैन।")); endCall(); }
     };
     rec.onend = () => {
       if (recRef.current !== rec) return;
       setInterim("");
       const text = finalText.trim();
-      if (text) {
-        noSpeech.current = 0;
-        setStatus("thinking");
-        sendRef.current(text);
-      } else if (callRef.current) {
-        noSpeech.current += 1;
-        if (noSpeech.current >= 3) {
-          setNote(T(langRef.current, "I could not hear you, so the voice call ended.", "आवाज सुनिएन, त्यसैले भ्वाइस कल समाप्त भयो।"));
-          endCall();
-        } else {
-          setTimeout(() => { if (callRef.current) startListening(); }, 300);
-        }
-      } else {
-        setStatus("idle");
-      }
+      if (text) { noSpeech.current = 0; setStatus("thinking"); sendRef.current(text); }
+      else handleSilence();
     };
     recRef.current = rec;
     setStatus("listening");
     try { rec.start(); } catch { setStatus("idle"); }
   }
 
+  function startListening() {
+    if (serverVoice.current !== "off") void recordServer(); else listenBrowser();
+  }
+
+  /* ---------- call controls ---------- */
+  function endCall() {
+    callRef.current = false;
+    setCall(false);
+    recId.current++;
+    recCleanup.current?.();
+    recCleanup.current = null;
+    finishRec.current = null;
+    const r = recRef.current; recRef.current = null;
+    try { r?.abort(); } catch {}
+    speechId.current++;
+    audioEl.current?.pause();
+    try { window.speechSynthesis?.cancel(); } catch {}
+    setStatus("idle");
+    setInterim("");
+  }
+
   function startCall() {
-    if (!micOk) { setNote(T(lang, "Voice call works in Chrome or Edge on desktop and Android. iPhone Safari may not support it.", "भ्वाइस कल Chrome वा Edge मा चल्छ।")); return; }
+    if (!window.isSecureContext) { setNote(secureNote(lang)); return; }
     setNote("");
     callRef.current = true; speakRef.current = true; noSpeech.current = 0;
     setCall(true); setSpeakOn(true);
+    const a = audioEl.current ?? (audioEl.current = new Audio());
+    a.src = SILENT;
+    a.play().catch(() => {});
     speak(T(lang, "Hello, I am listening. How can I help you?", "नमस्ते, म सुन्दैछु। तपाईंलाई कसरी सहयोग गरूँ?"), lang, () => { if (callRef.current) startListening(); });
   }
 
   function listenOnce() {
-    if (!micOk) { setNote(T(lang, "Voice input needs Chrome or Edge.", "आवाजबाट सोध्न Chrome वा Edge चाहिन्छ।")); return; }
+    if (!window.isSecureContext) { setNote(secureNote(lang)); return; }
     setNote("");
     if (status === "listening") {
+      if (finishRec.current) { finishRec.current(); return; }
       const r = recRef.current; recRef.current = null;
       try { r?.abort(); } catch {}
       setStatus("idle"); setInterim("");
       return;
     }
+    const a = audioEl.current ?? (audioEl.current = new Audio());
+    a.src = SILENT;
+    a.play().catch(() => {});
     startListening();
   }
 
@@ -231,35 +397,81 @@ export default function Chatbot() {
     const next = !speakOn;
     setSpeakOn(next);
     speakRef.current = next;
-    if (!next) { speechId.current++; try { window.speechSynthesis?.cancel(); } catch {} setStatus("idle"); }
+    if (next) {
+      const a = audioEl.current ?? (audioEl.current = new Audio());
+      a.src = SILENT;
+      a.play().catch(() => {});
+    } else {
+      speechId.current++;
+      audioEl.current?.pause();
+      try { window.speechSynthesis?.cancel(); } catch {}
+      setStatus("idle");
+    }
   }
 
   /* ---------- chat ---------- */
-  function afterReply(reply: Reply, l: Lang) {
+  async function askAI(history: { role: string; content: string }[], l: Lang): Promise<Reply | null> {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang: l, messages: history }),
+      });
+      if (res.status === 503) { aiState.current = "off"; return null; }
+      if (!res.ok) return null;
+      const d = (await res.json()) as { text?: string };
+      if (!d.text) return null;
+      return {
+        text: d.text,
+        links: [
+          { label: T(l, "Get a quote →", "कोटेसन लिनुहोस् →"), href: "/contact" },
+          { label: T(l, "💬 Ask our team", "💬 टोलीलाई सोध्नुहोस्"), href: `https://wa.me/977${company.contact.whatsapp}`, external: true },
+        ],
+        chips: l === "ne" ? ["मूल्य/कोटेसन", "स्पेयर पार्ट्स", "सम्पर्क", "ठेगाना"] : ["Get a quote", "Spare parts", "Contact", "Location"],
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function afterReply(reply: Reply) {
     if (speakRef.current || callRef.current) {
+      const l: Lang = hasDevanagari(reply.text) ? "ne" : "en";
       speak(speakable(reply), l, () => { if (callRef.current) startListening(); });
-    } else if (callRef.current) {
-      startListening();
     } else {
       setStatus("idle");
     }
   }
 
-  function send(text: string) {
+  async function send(text: string) {
     const msg = text.trim().slice(0, 300);
-    if (!msg || typing) return;
+    if (!msg || busy.current) return;
+    busy.current = true;
     const replyLang: Lang = hasDevanagari(msg) ? "ne" : lang;
     const userMsg: Message = { id: idRef.current++, role: "user", content: msg };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setTyping(true);
-    const result = respond(msg, flow, replyLang);
-    timer.current = setTimeout(() => {
-      setFlow(result.flow);
-      setMessages((m) => [...m, { id: idRef.current++, role: "assistant", reply: result.reply }]);
-      setTyping(false);
-      afterReply(result.reply, replyLang);
-    }, 450);
+    if (callRef.current) setStatus("thinking");
+
+    const local = respond(msg, flow, replyLang);
+    let reply = local.reply;
+    let nextFlow = local.flow;
+    if (needsAI(msg, flow) && aiState.current !== "off") {
+      const history = [...messages, userMsg]
+        .slice(-8)
+        .map((m) => ({ role: m.role, content: m.content ?? m.reply?.text ?? "" }))
+        .filter((m) => m.content);
+      const ai = await askAI(history, replyLang);
+      if (ai) { reply = ai; nextFlow = null; } else { await sleep(200); }
+    } else {
+      await sleep(350);
+    }
+    setFlow(nextFlow);
+    setMessages((m) => [...m, { id: idRef.current++, role: "assistant", reply }]);
+    setTyping(false);
+    busy.current = false;
+    afterReply(reply);
   }
 
   function closeChat() {
@@ -277,6 +489,7 @@ export default function Chatbot() {
     endCall();
     setFlow(null);
     setTyping(false);
+    busy.current = false;
     setMessages([{ id: idRef.current++, role: "assistant", reply: greeting(lang) }]);
   }
 
@@ -308,7 +521,7 @@ export default function Chatbot() {
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold">B & B {T(lang, "Assistant", "सहायक")}</p>
-                <p className="truncate text-[11px] text-slate-300">{T(lang, "Replies instantly", "तुरुन्त जवाफ")}</p>
+                <p className="truncate text-[11px] text-slate-300">{T(lang, "Machinery help, 24/7", "मेसिनरी सहयोग, २४/७")}</p>
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
@@ -316,16 +529,12 @@ export default function Chatbot() {
                 <button type="button" onClick={() => setLanguage("en")} aria-pressed={lang === "en"} className={`px-2 py-1 ${lang === "en" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>EN</button>
                 <button type="button" onClick={() => setLanguage("ne")} aria-pressed={lang === "ne"} className={`px-2 py-1 ${lang === "ne" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>{"\u0928\u0947"}</button>
               </div>
-              {ttsOk && (
-                <button type="button" onClick={toggleSpeak} aria-pressed={speakOn} title={T(lang, "Read answers aloud", "उत्तर सुनाउनुहोस्")} aria-label={T(lang, "Read answers aloud", "उत्तर सुनाउनुहोस्")} className={hdrBtn}>
-                  {speakOn ? "\u{1F50A}" : "\u{1F507}"}
-                </button>
-              )}
-              {micOk && ttsOk && (
-                <button type="button" onClick={call ? endCall : startCall} title={T(lang, "Voice call", "भ्वाइस कल")} aria-label={call ? T(lang, "End voice call", "भ्वाइस कल काट्नुहोस्") : T(lang, "Start voice call", "भ्वाइस कल सुरु गर्नुहोस्")} className={`${hdrBtn} ${call ? "bg-red-600 text-white hover:bg-red-700" : ""}`}>
-                  {"\u{1F4DE}"}
-                </button>
-              )}
+              <button type="button" onClick={toggleSpeak} aria-pressed={speakOn} title={T(lang, "Read answers aloud", "उत्तर सुनाउनुहोस्")} aria-label={T(lang, "Read answers aloud", "उत्तर सुनाउनुहोस्")} className={hdrBtn}>
+                {speakOn ? "\u{1F50A}" : "\u{1F507}"}
+              </button>
+              <button type="button" onClick={call ? endCall : startCall} title={T(lang, "Voice call", "भ्वाइस कल")} aria-label={call ? T(lang, "End voice call", "भ्वाइस कल काट्नुहोस्") : T(lang, "Start voice call", "भ्वाइस कल सुरु गर्नुहोस्")} className={`${hdrBtn} ${call ? "bg-red-600 text-white hover:bg-red-700" : ""}`}>
+                {"\u{1F4DE}"}
+              </button>
               <button type="button" onClick={reset} aria-label="Restart chat" title="Restart" className={hdrBtn}>{"\u21BA"}</button>
               <button type="button" onClick={closeChat} aria-label="Close chat" className={`${hdrBtn} text-xl`}>×</button>
             </div>
@@ -389,18 +598,16 @@ export default function Chatbot() {
               </div>
             )}
             <form onSubmit={(e: FormEvent) => { e.preventDefault(); send(input); }} className="flex gap-2">
-              {micOk && (
-                <button type="button" onClick={listenOnce} aria-pressed={status === "listening" && !call} aria-label={T(lang, "Speak your question", "बोलेर सोध्नुहोस्")} title={T(lang, "Speak your question", "बोलेर सोध्नुहोस्")}
-                  className={`rounded-lg border px-3 py-2.5 text-base ${status === "listening" && !call ? "animate-pulse border-red-500 bg-red-50" : "border-[var(--border)] hover:bg-amber-50"}`}>
-                  {"\u{1F3A4}"}
-                </button>
-              )}
+              <button type="button" onClick={listenOnce} aria-pressed={status === "listening" && !call} aria-label={T(lang, "Speak your question (tap again to send)", "बोलेर सोध्नुहोस् (पठाउन फेरि थिच्नुहोस्)")} title={T(lang, "Speak your question (tap again to send)", "बोलेर सोध्नुहोस् (पठाउन फेरि थिच्नुहोस्)")}
+                className={`rounded-lg border px-3 py-2.5 text-base ${status === "listening" && !call ? "animate-pulse border-red-500 bg-red-50" : "border-[var(--border)] hover:bg-amber-50"}`}>
+                {"\u{1F3A4}"}
+              </button>
               <input
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 maxLength={300}
-                placeholder={flow ? T(lang, "Type your answer…", "यहाँ लेख्नुहोस्…") : T(lang, "Ask about machines, parts, price…", "मेसिन, पार्ट, मूल्य सोध्नुहोस्…")}
+                placeholder={flow ? T(lang, "Type your answer…", "यहाँ लेख्नुहोस्…") : T(lang, "Ask about machines, parts, repairs…", "मेसिन, पार्ट, मर्मत सोध्नुहोस्…")}
                 aria-label="Message"
                 className="min-w-0 flex-1 rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brand-accent)]"
               />
@@ -414,7 +621,7 @@ export default function Chatbot() {
 
       {teaser && !open && (
         <button type="button" onClick={toggle} className="fixed bottom-32 right-4 z-[60] max-w-[220px] rounded-2xl rounded-br-sm border border-[var(--border)] bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-xl sm:bottom-24">
-          {T(lang, "Need a machine or part? Ask us 👋", "मेसिन वा पार्ट चाहिएको छ? सोध्नुहोस् 👋")}
+          {T(lang, "Machine problem? Ask us 👋", "मेसिनमा समस्या छ? सोध्नुहोस् 👋")}
         </button>
       )}
 
