@@ -29,7 +29,7 @@ const nepaliFont = Noto_Sans_Devanagari({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_ORIGIN || "http://localhost:3000"),
-  openGraph: { type: "website", siteName: "B & B Machinery", locale: "en_NP", images: ["/images/company/shop.jpg"] },
+  openGraph: { type: "website", siteName: "B & B Machinery", locale: "en_NP", images: ["/images/IMG-20261004-WA0010.jpg"] },
   title: {
     default: "B & B Machinery | Machinery & Machinery Parts in Pokhara",
     template: "%s | B & B Machinery",

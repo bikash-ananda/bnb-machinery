@@ -3,7 +3,7 @@
  * Change a link here, save, and the matching page updates. No other file needs editing.
  *
  * You can paste any of these as "src":
- *   1) Local file:        "/images/gallery/item-1.jpg"      (file inside the public folder)
+ *   1) Local file:        "/images/shop.jpg"               (file inside the public folder)
  *   2) Google Drive:      gdrive("FILE_ID")                  (share file -> "Anyone with the link"; FILE_ID is the part between /d/ and /view)
  *   3) Google Photos:     "https://lh3.googleusercontent.com/pw/..."
  *        (open the photo in Google Photos, right-click the picture -> "Copy image address")
@@ -30,15 +30,22 @@ export const siteImages = {
     location: img(px(32539260), "Tractor in a wheat field under a cloudy sky"),
   },
 
-  /** Photo beside the text on the About page (replace with your own shop photo) */
-  aboutPhoto: img("/images/company/shop.jpg", "B & B Machinery shop"),
+  /** Photo beside the text on the About page */
+  aboutPhoto: img(
+    "/images/IMG-20261004-WA0010.jpg",
+    "B & B Machinery storefront with agricultural equipment outside",
+  ),
 
   /** Photos on the Gallery page. Add or remove lines freely. */
   gallery: [
-    { src: "/images/company/shop.jpg", alt: "B & B Machinery shop front, Pokhara", tag: "Shop" },
-    { src: "/images/gallery/shop-2.jpg", alt: "Inside the B & B Machinery showroom", tag: "Shop" },
-    { src: "/images/gallery/item-1.jpg", alt: "Machinery available at B & B", tag: "Items" },
-    { src: "/images/gallery/item-2.jpg", alt: "Tools and equipment at B & B", tag: "Items" },
+    { src: "/images/IMG-20261004-WA0010.jpg", alt: "B & B Machinery storefront with agricultural equipment outside", tag: "Shop" },
+    { src: "/images/IMG-20261004-WA0002.jpg", alt: "Agricultural equipment displayed outside a machinery shop", tag: "Shop" },
+    { src: "/images/shop.jpg", alt: "Inside the B & B Machinery showroom", tag: "Shop" },
+    { src: "/images/IMG-20261004-WA0003.jpg", alt: "Machinery and tools on display inside the showroom", tag: "Showroom" },
+    { src: "/images/IMG-20261004-WA0006.jpg", alt: "View across the B & B Machinery showroom and counter", tag: "Showroom" },
+    { src: "/images/IMG-20261004-WA0005.jpg", alt: "Metal rods stacked in stock", tag: "Stock" },
+    { src: "/images/IMG-20261004-WA0001.jpg", alt: "Red walk-behind harvesting machine viewed from the side", tag: "Equipment" },
+    { src: "/images/IMG-20261004-WA0007.jpg", alt: "Several power tillers displayed together", tag: "Equipment" },
   ] as { src: string; alt: string; tag: string }[],
 
   /**

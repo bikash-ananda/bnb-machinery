@@ -15,7 +15,7 @@ export const products: Product[] = [
     name: "Corn Sheller",
     category: "Agricultural Machinery",
     brand: "B&B Machinery",
-    image: "/images/products/corn-sheller.jpg",
+    image: "",
     description:
       "Agricultural machinery for efficient maize shelling and processing.",
     featured: true,
@@ -26,7 +26,7 @@ export const products: Product[] = [
     name: "Self Propelled Reaper",
     category: "Agricultural Machinery",
     brand: "B&B Machinery",
-    image: "/images/products/self-propelled-reaper.jpg",
+    image: "/images/IMG-20261004-WA0000.jpg",
     description:
       "Compact agricultural harvesting machinery designed for efficient field operation.",
     featured: true,
@@ -37,7 +37,7 @@ export const products: Product[] = [
     name: "Power Tiller",
     category: "Agricultural Machinery",
     brand: "B&B Machinery",
-    image: "/images/products/power-tiller.jpg",
+    image: "/images/IMG-20261004-WA0007.jpg",
     description:
       "Versatile agricultural machinery for cultivation and field preparation.",
     featured: true,
@@ -48,7 +48,7 @@ export const products: Product[] = [
     name: "Cordless Multi-Tool Kit",
     category: "Power Tools",
     brand: "B&B Machinery",
-    image: "/images/products/cordless-tool-kit.jpg",
+    image: "",
     description:
       "Multi-purpose cordless tools for workshop, maintenance and mechanical work.",
     featured: true,
@@ -59,7 +59,7 @@ export const products: Product[] = [
     name: "Chainsaw",
     category: "Power Tools",
     brand: "B&B Machinery",
-    image: "/images/products/chainsaw.jpg",
+    image: "",
     description:
       "Power equipment for cutting and outdoor mechanical applications.",
     featured: true,
@@ -70,7 +70,7 @@ export const products: Product[] = [
     name: "Mechanical Tools",
     category: "Mechanical Tools",
     brand: "B&B Machinery",
-    image: "/images/products/mechanical-tools.jpg",
+    image: "",
     description:
       "Mechanical tools and equipment for workshops and technical work.",
     featured: true,
@@ -81,7 +81,7 @@ export const products: Product[] = [
     name: "Machinery Equipment",
     category: "Machinery",
     brand: "B&B Machinery",
-    image: "/images/products/machinery.jpg",
+    image: "",
     description:
       "Machinery and equipment for agricultural, construction and industrial applications.",
     featured: true,
