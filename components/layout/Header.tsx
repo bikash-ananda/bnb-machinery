@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import SafeImage from "@/components/ui/SafeImage";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 const navigation: { key: MessageKey; href: string }[] = [
@@ -30,9 +31,12 @@ export default function Header() {
           aria-label={"B & B Machinery · " + t("staffLogin")}
           className="group relative flex min-h-12 min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand-accent)]"
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-sm font-bold text-white">
-            B&B
-          </span>
+          <SafeImage
+            src="/images/logo.jpg"
+            alt=""
+            contain
+            className="h-11 w-11 shrink-0 rounded-full border border-slate-200 bg-white"
+          />
           <span className="min-w-0">
             <span className="block truncate text-base font-bold tracking-tight text-[var(--brand-primary)] sm:text-lg">
               B & B Machinery
