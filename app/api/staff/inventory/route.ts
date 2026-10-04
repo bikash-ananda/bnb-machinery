@@ -1,178 +1,83 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import type { ProductFields } from "@/lib/inventory/types";
+import { createInventoryDraft } from "@/lib/server/inventory";
 import { getStaffSession, isAllowedOrigin } from "@/lib/server/auth";
 import {
-  getInventoryProduct,
-  reviewInventoryProduct,
-  saveInventoryProduct,
-  submitInventoryProduct,
-} from "@/lib/server/inventory";
-import { BackendNotConfiguredError } from "@/lib/server/supabase";
+  BackendNotConfiguredError,
+  deletePrivateImages,
+  uploadPrivateImage,
+} from "@/lib/server/supabase";
 
-type Context = { params: Promise<{ id: string }> };
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_IMAGE_COUNT = 5;
+const MAX_TOTAL_SIZE = 25 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-function shortText(value: unknown, maxLength: number): string | null {
-  if (value === null || value === undefined) return null;
-  if (typeof value !== "string" || value.length > maxLength) throw new Error("invalid");
-  return value.trim() || null;
-}
-
-function parseFields(value: unknown): ProductFields {
-  if (!value || typeof value !== "object") throw new Error("invalid");
-  const input = value as Record<string, unknown>;
-  const stock = input.stockQuantity;
-  if (
-    stock !== null &&
-    stock !== undefined &&
-    stock !== "" &&
-    (typeof stock !== "number" && typeof stock !== "string"
-      ? true
-      : !/^\d+$/.test(String(stock)) ||
-        !Number.isSafeInteger(Number(stock)) ||
-        Number(stock) < 0 ||
-        Number(stock) > 1_000_000_000)
-  ) {
-    throw new Error("invalid");
-  }
-
-  const specifications = Array.isArray(input.specifications)
-    ? input.specifications.slice(0, 50).map((item) => {
-        if (!item || typeof item !== "object") throw new Error("invalid");
-        const spec = item as Record<string, unknown>;
-        const name = shortText(spec.name, 80);
-        const specValue = shortText(spec.value, 160);
-        if (!name || !specValue) throw new Error("invalid");
-        return { name, value: specValue };
-      })
-    : [];
-  const applications = Array.isArray(input.applications)
-    ? input.applications.slice(0, 30).map((item) => {
-        const application = shortText(item, 120);
-        if (!application) throw new Error("invalid");
-        return application;
-      })
-    : [];
-
-  return {
-    name_en: shortText(input.nameEn, 160),
-    name_ne: shortText(input.nameNe, 160),
-    description_en: shortText(input.descriptionEn, 4000),
-    description_ne: shortText(input.descriptionNe, 4000),
-    category_name_en: shortText(input.category, 100),
-    brand_name: shortText(input.brand, 100),
-    model: shortText(input.model, 120),
-    part_number: shortText(input.partNumber, 120),
-    stock_quantity:
-      stock === null || stock === undefined || stock === ""
-        ? null
-        : Number(stock),
-    specifications,
-    applications,
-  };
-}
-
-export async function GET(_request: Request, context: Context) {
-  let session;
-  try {
-    session = await getStaffSession();
-  } catch {
-    return NextResponse.json({ error: "Authentication could not be checked. Please try again." }, { status: 503 });
-  }
-  if (!session) return NextResponse.json({ error: "Sign in to view this stock item." }, { status: 401 });
-  const { id } = await context.params;
-  if (!UUID_PATTERN.test(id)) return NextResponse.json({ error: "Stock item not found." }, { status: 404 });
-
-  try {
-    const product = await getInventoryProduct(id);
-    if (
-      !product ||
-      (session.role === "INVENTORY_EDITOR" && product.created_by !== session.email)
-    ) {
-      return NextResponse.json({ error: "Stock item not found." }, { status: 404 });
-    }
-    return NextResponse.json(
-      {
-        product: {
-          ...product,
-          images: (product.images ?? []).map((image) => ({
-            ...image,
-            url: "/api/inventory/images/" + encodeURIComponent(image.id),
-          })),
-        },
-      },
-      { headers: { "cache-control": "no-store" } },
-    );
-  } catch {
-    return NextResponse.json({ error: "Stock item could not be loaded." }, { status: 503 });
-  }
-}
-
-export async function PATCH(request: Request, context: Context) {
+export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: "Request could not be verified." }, { status: 403 });
   }
+
   let session;
   try {
     session = await getStaffSession();
   } catch {
     return NextResponse.json({ error: "Authentication could not be checked. Please try again." }, { status: 503 });
   }
-  if (!session) return NextResponse.json({ error: "Sign in to update stock." }, { status: 401 });
-  if (Number(request.headers.get("content-length") ?? 0) > 64 * 1024) {
-    return NextResponse.json({ error: "Request is too large." }, { status: 413 });
+  if (!session) return NextResponse.json({ error: "Sign in to add stock." }, { status: 401 });
+  if (session.role !== "INVENTORY_EDITOR" && session.role !== "OWNER") {
+    return NextResponse.json({ error: "You do not have permission to add stock." }, { status: 403 });
   }
-  const { id } = await context.params;
-  if (!UUID_PATTERN.test(id)) return NextResponse.json({ error: "Stock item not found." }, { status: 404 });
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_TOTAL_SIZE + 1024 * 1024) {
+    return NextResponse.json({ error: "The selected images are too large." }, { status: 413 });
+  }
 
-  let payload: Record<string, unknown>;
+  let form: FormData;
   try {
-    const value: unknown = await request.json();
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid");
-    payload = value as Record<string, unknown>;
+    form = await request.formData();
   } catch {
-    return NextResponse.json({ error: "Check the form and try again." }, { status: 400 });
+    return NextResponse.json({ error: "Choose valid image files and try again." }, { status: 400 });
   }
 
+  const images = form.getAll("images");
+  if (
+    images.length === 0 ||
+    images.length > MAX_IMAGE_COUNT ||
+    images.some(
+      (image) =>
+        !(image instanceof File) ||
+        !ALLOWED_IMAGE_TYPES.has(image.type) ||
+        image.size === 0,
+    ) ||
+    images.reduce((total, image) => total + (image instanceof File ? image.size : 0), 0) > MAX_TOTAL_SIZE
+  ) {
+    return NextResponse.json({ error: "Choose up to five valid images under 25 MB total." }, { status: 400 });
+  }
+
+  const draftId = randomUUID();
+  const paths: string[] = [];
   try {
-    if (payload.action === "save") {
-      const fields = parseFields(payload.fields);
-      const saved = await saveInventoryProduct(session, id, fields);
-      if (!saved) return NextResponse.json({ error: "This item can no longer be edited." }, { status: 409 });
-      return NextResponse.json({ ok: true });
+    const storedImages = [];
+    for (const [sortIndex, image] of images.entries()) {
+      if (!(image instanceof File)) continue;
+      const extension = image.type === "image/jpeg" ? "jpg" : image.type.slice("image/".length);
+      const path = `${draftId}/${randomUUID()}.${extension}`;
+      await uploadPrivateImage(path, Buffer.from(await image.arrayBuffer()), image.type);
+      paths.push(path);
+      storedImages.push({ storage_path: path, mime_type: image.type, sort_index: sortIndex });
     }
 
-    if (payload.action === "submit") {
-      if (session.role !== "INVENTORY_EDITOR") {
-        return NextResponse.json({ error: "Only inventory staff can submit a draft." }, { status: 403 });
-      }
-      const submitted = await submitInventoryProduct(session, id);
-      if (!submitted) {
-        return NextResponse.json(
-          { error: "Add a product name and save your draft before submitting it." },
-          { status: 409 },
-        );
-      }
-      return NextResponse.json({ ok: true });
-    }
-
-    if (payload.action === "approve" || payload.action === "reject" || payload.action === "correction") {
-      if (session.role !== "OWNER") {
-        return NextResponse.json({ error: "Owner access is required for this action." }, { status: 403 });
-      }
-      const note = typeof payload.note === "string" ? payload.note.trim().slice(0, 1000) : undefined;
-      const reviewed = await reviewInventoryProduct(session, id, payload.action, note);
-      if (!reviewed) {
-        return NextResponse.json({ error: "This product is no longer waiting for owner review." }, { status: 409 });
-      }
-      return NextResponse.json({ ok: true });
-    }
-
-    return NextResponse.json({ error: "Choose a valid inventory action." }, { status: 400 });
+    const id = await createInventoryDraft(session.email, `draft-${draftId}`, storedImages);
+    if (typeof id !== "string") throw new Error("Draft could not be created.");
+    return NextResponse.json({ id }, { status: 201 });
   } catch (error) {
+    try {
+      await deletePrivateImages(paths);
+    } catch {
+      // The failed upload or draft creation remains the primary error.
+    }
     if (error instanceof BackendNotConfiguredError) {
       return NextResponse.json({ error: "Inventory services are not configured yet." }, { status: 503 });
     }
-    return NextResponse.json({ error: "The stock item could not be updated." }, { status: 503 });
+    return NextResponse.json({ error: "The stock item could not be created." }, { status: 503 });
   }
 }
