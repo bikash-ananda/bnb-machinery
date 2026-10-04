@@ -1,0 +1,45 @@
+import "server-only";
+
+import { products as staticProducts, type Product } from "@/data/products";
+import { staticPrices } from "@/data/prices";
+import { productImage } from "@/data/siteImages";
+import type { ProductRecord } from "@/lib/inventory/types";
+import { getPublishedProducts } from "@/lib/server/inventory";
+import type { ShopProduct } from "@/lib/shop/types";
+
+function fromStatic(p: Product): ShopProduct {
+  const extra = staticPrices[p.id] ?? {};
+  const img = productImage(p.id, p.image);
+  return {
+    id: p.id, slug: p.id, name: p.name, brand: p.brand, category: p.category,
+    image: img, images: [img], description: p.description, specs: [],
+    price: extra.price ?? null, mrp: extra.mrp ?? null,
+    availability: "ask", stockQty: null, featured: p.featured,
+  };
+}
+
+function fromDb(r: ProductRecord): ShopProduct {
+  const images = (r.images ?? []).map((i) => "/api/inventory/images/" + encodeURIComponent(i.id));
+  const qty = r.stock_quantity;
+  const availability =
+    r.stock_status === "OUT_OF_STOCK" || qty === 0 ? "out" : r.stock_status === "AVAILABLE" || (qty ?? 0) > 0 ? "in" : "ask";
+  return {
+    id: r.id, slug: r.slug, name: r.name_en || r.name || "Product", nameNe: r.name_ne || undefined,
+    brand: r.brand_name || "B & B Machinery", category: r.category_name_en || "Machinery",
+    image: images[0] ?? "", images, description: r.description_en || "", model: r.model || undefined,
+    specs: (r.specifications ?? []).filter((s) => s && s.name && s.value),
+    price: typeof r.price === "number" ? r.price : null, mrp: null,
+    availability, stockQty: qty,
+  };
+}
+
+export async function getShopProducts(): Promise<ShopProduct[]> {
+  let live: ShopProduct[] = [];
+  try { live = (await getPublishedProducts()).map(fromDb); } catch { live = []; }
+  const seen = new Set(live.map((p) => p.slug));
+  return [...live, ...staticProducts.filter((s) => !seen.has(s.id)).map(fromStatic)];
+}
+
+export async function getShopProduct(slug: string) {
+  return (await getShopProducts()).find((p) => p.slug === slug || p.id === slug) ?? null;
+}
