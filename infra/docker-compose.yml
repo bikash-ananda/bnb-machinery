@@ -1,0 +1,76 @@
+# Production stack for the Contabo VPS. Run from the repo root:
+#   docker compose -f infra/docker-compose.yml --env-file infra/.env.production up -d --build
+name: bnb
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN}
+      ADMIN_ALLOWED_IPS: ${ADMIN_ALLOWED_IPS:-0.0.0.0/0 ::/0}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [web]
+    networks: [edge, internal]
+
+  web:
+    build: { context: .., dockerfile: infra/Dockerfile }
+    restart: unless-stopped
+    env_file: .env.production
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    volumes: [media:/data/media]
+    expose: ["3000"]
+    networks: [internal]
+    read_only: true
+    tmpfs: [/tmp, /app/.next/cache]
+    security_opt: ["no-new-privileges:true"]
+
+  # Enable in Phase 5 (jobs, outbox, PDFs, notifications, AI replies):
+  # worker:
+  #   build: { context: .., dockerfile: infra/Dockerfile }
+  #   command: ["node", "worker.js"]
+  #   restart: unless-stopped
+  #   env_file: .env.production
+  #   depends_on: [postgres, redis]
+  #   volumes: [media:/data/media]
+  #   networks: [internal]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bnb
+      POSTGRES_USER: bnb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      postgres -c shared_buffers=1GB -c effective_cache_size=4GB -c work_mem=16MB
+      -c maintenance_work_mem=256MB -c max_connections=100 -c log_min_duration_statement=500
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bnb -d bnb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]   # no published ports: never reachable from the internet
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "noeviction"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+volumes: { pgdata: {}, redisdata: {}, media: {}, caddy_data: {}, caddy_config: {} }
+networks:
+  edge: {}
+  internal: { internal: false }

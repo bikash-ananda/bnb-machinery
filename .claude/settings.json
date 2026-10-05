@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)", "Read(./.env.*)", "Read(./infra/.env.production)",
+      "Read(./pnpm-lock.yaml)", "Read(./node_modules/**)", "Read(./.next/**)"
+    ]
+  }
+}
