@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { isAllowedOrigin } from "@/lib/server/auth";
 import { rateLimited } from "@/lib/server/ai";
 import { getShopProducts } from "@/lib/server/catalog";
+import { notifyNewOrder } from "@/lib/server/notify";
 import { dbRequest, hasSupabaseConfig } from "@/lib/server/supabase";
 
 export const runtime = "nodejs";
@@ -69,6 +70,12 @@ export async function POST(request: Request) {
       saved = true;
     } catch { saved = false; }
   }
+
+  const summary = lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - Rs " + (l.price * l.qty).toLocaleString("en-IN") : " - price on request"}`).join("\n");
+  void notifyNewOrder(
+    `New order ${orderNo} - ${name}`,
+    `Order ${orderNo}\nName: ${name}\nPhone: ${phone}\n${email ? "Email: " + email + "\n" : ""}${delivery === "pickup" ? "Pickup from shop" : "Deliver to: " + address + ", " + district}\nPayment: ${payment}\n\n${summary}\n\nSubtotal: Rs ${subtotal.toLocaleString("en-IN")}${unpriced ? " (+" + unpriced + " item(s) price on request)" : ""}${note ? "\nNote: " + note : ""}`,
+  );
 
   return NextResponse.json({ orderNo, subtotal, unpriced, lines, saved });
 }

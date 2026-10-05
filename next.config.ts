@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone", // needed for the Docker image (infra/Dockerfile)
   poweredByHeader: false,
   async headers() {
     return [{

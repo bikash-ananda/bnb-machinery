@@ -1,8 +1,9 @@
 # Roadmap — tick boxes as you go. Claude Code: do the FIRST unchecked task, then stop and report.
 
 ## Phase 0 — Foundation
-- [ ] 0.1 Add `output: "standalone"` to next.config.ts; add `src/env.ts` (zod) and `src/lib/{money,dates-bs,logger}.ts` with tests
-- [ ] 0.2 Create folders per ARCHITECTURE.md; move shared UI into `src/ui`; add `config/` and `locales/` + `t()` helper (en+ne), migrate existing site strings to keys
+- [x] 0.1 `output: "standalone"`, `src/env.ts` (zod), `src/lib/{money,dates-bs,logger}.ts`, Vitest (19 tests) — done
+- [x] 0.2a `config/` (site, features, numbering, tax.defaults), `locales/` en+ne, `t()` + `useT()`, key-parity test — done
+- [ ] 0.2b Migrate existing inline `tr(en, ne)` strings and `lib/i18n/messages.ts` to `locales/*.json` keys; move shared UI into `src/ui`; keep legacy imports working
 - [ ] 0.3 Dev compose (Postgres+Redis), Drizzle setup, `pnpm db:*` scripts, CI (typecheck, lint, test)
 - [ ] 0.4 Production Dockerfile + compose + Caddy from `infra/`, verify the CURRENT site boots in Docker locally
 

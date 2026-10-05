@@ -3,29 +3,34 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import AddToCart from "@/components/shop/AddToCart";
+import CompareButton from "@/components/shop/CompareButton";
 import Reveal from "@/components/ui/Reveal";
 import SafeImage from "@/components/ui/SafeImage";
 import { toggleWish, useShop } from "@/lib/shop/store";
+import { useTr } from "@/lib/shop/tr";
 import { discountPct, npr, type ShopProduct } from "@/lib/shop/types";
 
 type Sort = "featured" | "name" | "low" | "high";
-
 type LegacyProduct = { id: string; name: string; category: string; brand: string; image: string; description: string; featured?: boolean };
+export type ExplorerInitial = { q?: string; category?: string; brand?: string; saved?: boolean };
 
 const normalize = (p: ShopProduct | LegacyProduct): ShopProduct =>
   "slug" in p
     ? p
     : { id: p.id, slug: p.id, name: p.name, brand: p.brand, category: p.category, image: p.image, images: [p.image], description: p.description, specs: [], price: null, mrp: null, availability: "ask", stockQty: null, featured: p.featured };
 
-export default function ProductsExplorer({ products: input }: { products: (ShopProduct | LegacyProduct)[]; categories?: string[] }) {
+export default function ProductsExplorer({
+  products: input, initial,
+}: { products: (ShopProduct | LegacyProduct)[]; categories?: string[]; initial?: ExplorerInitial }) {
+  const tr = useTr();
   const products = useMemo(() => input.map(normalize), [input]);
   const { wish } = useShop();
-  const [q, setQ] = useState("");
-  const [cat, setCat] = useState("All");
-  const [brand, setBrand] = useState("All");
+  const [q, setQ] = useState(initial?.q ?? "");
+  const [cat, setCat] = useState(initial?.category ?? "All");
+  const [brand, setBrand] = useState(initial?.brand ?? "All");
   const [sort, setSort] = useState<Sort>("featured");
   const [stockOnly, setStockOnly] = useState(false);
-  const [savedOnly, setSavedOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(initial?.saved ?? false);
 
   const cats = useMemo(() => ["All", ...Array.from(new Set(products.map((p) => p.category)))], [products]);
   const brands = useMemo(() => ["All", ...Array.from(new Set(products.map((p) => p.brand)))], [products]);
@@ -35,7 +40,7 @@ export default function ProductsExplorer({ products: input }: { products: (ShopP
     const out = products.filter((p) =>
       (cat === "All" || p.category === cat) && (brand === "All" || p.brand === brand) &&
       (!stockOnly || p.availability === "in") && (!savedOnly || wish.includes(p.id)) &&
-      (!term || [p.name, p.brand, p.category, p.model ?? "", p.description].join(" ").toLowerCase().includes(term)));
+      (!term || [p.name, p.nameNe ?? "", p.brand, p.category, p.model ?? "", p.description].join(" ").toLowerCase().includes(term)));
     if (sort === "name") out.sort((a, b) => a.name.localeCompare(b.name));
     if (sort === "low") out.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
     if (sort === "high") out.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
@@ -50,30 +55,30 @@ export default function ProductsExplorer({ products: input }: { products: (ShopP
     <>
       <div className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="🔍 Search machines, brands, models…" aria-label="Search products"
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr("🔍 Search machines, brands, models…", "🔍 मेसिन, ब्रान्ड, मोडल खोज्नुहोस्…")} aria-label="Search products"
             className="w-full rounded-xl border border-slate-300 bg-white px-5 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 lg:max-w-md" />
           <div className="flex flex-wrap gap-2">
             <select aria-label="Brand" value={brand} onChange={(e) => setBrand(e.target.value)} className={sel}>
-              {brands.map((b) => <option key={b} value={b}>{b === "All" ? "All brands" : b}</option>)}
+              {brands.map((b) => <option key={b} value={b}>{b === "All" ? tr("All brands", "सबै ब्रान्ड") : b}</option>)}
             </select>
             <select aria-label="Sort" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={sel}>
-              <option value="featured">Featured</option><option value="name">Name A–Z</option>
-              <option value="low">Price: low to high</option><option value="high">Price: high to low</option>
+              <option value="featured">{tr("Featured", "विशेष")}</option><option value="name">{tr("Name A–Z", "नाम A–Z")}</option>
+              <option value="low">{tr("Price: low to high", "मूल्य: कम देखि बढी")}</option><option value="high">{tr("Price: high to low", "मूल्य: बढी देखि कम")}</option>
             </select>
-            <button type="button" aria-pressed={stockOnly} onClick={() => setStockOnly(!stockOnly)} className={chip(stockOnly)}>In stock</button>
-            <button type="button" aria-pressed={savedOnly} onClick={() => setSavedOnly(!savedOnly)} className={chip(savedOnly)}>♥ Saved ({wish.length})</button>
+            <button type="button" aria-pressed={stockOnly} onClick={() => setStockOnly(!stockOnly)} className={chip(stockOnly)}>{tr("In stock", "स्टकमा")}</button>
+            <button type="button" aria-pressed={savedOnly} onClick={() => setSavedOnly(!savedOnly)} className={chip(savedOnly)}>♥ {tr("Saved", "सुरक्षित")} ({wish.length})</button>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {cats.map((c) => <button key={c} type="button" onClick={() => setCat(c)} aria-pressed={cat === c} className={chip(cat === c)}>{c}</button>)}
+          {cats.map((c) => <button key={c} type="button" onClick={() => setCat(c)} aria-pressed={cat === c} className={chip(cat === c)}>{c === "All" ? tr("All", "सबै") : c}</button>)}
         </div>
-        <p className="text-sm text-slate-500">{list.length} product{list.length === 1 ? "" : "s"}</p>
+        <p className="text-sm text-slate-500">{list.length} {tr(list.length === 1 ? "product" : "products", "उत्पादन")}</p>
       </div>
 
       {list.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-          <p className="font-bold">No match found.</p>
-          <Link href={`/contact?item=${encodeURIComponent(q)}`} className="mt-3 inline-block font-bold text-amber-600">Ask us to source “{q || "your item"}” →</Link>
+          <p className="font-bold">{savedOnly && wish.length === 0 ? tr("You have not saved anything yet. Tap ♡ on a product.", "तपाईंले केही सुरक्षित गर्नुभएको छैन। उत्पादनमा ♡ थिच्नुहोस्।") : tr("No match found.", "केही भेटिएन।")}</p>
+          <Link href={`/contact?item=${encodeURIComponent(q)}`} className="mt-3 inline-block font-bold text-amber-600">{tr("Ask us to source it →", "हामीलाई खोजिदिन भन्नुहोस् →")}</Link>
         </div>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,8 +97,8 @@ export default function ProductsExplorer({ products: input }: { products: (ShopP
                       {saved ? "♥" : "♡"}
                     </button>
                     <div className="absolute left-3 top-3 flex flex-col gap-1">
-                      {p.featured && <span className="rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black uppercase">Featured</span>}
-                      {off > 0 && <span className="rounded-full bg-red-600 px-3 py-1 text-[10px] font-black text-white">{off}% OFF</span>}
+                      {p.featured && <span className="rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black uppercase">{tr("Featured", "विशेष")}</span>}
+                      {off > 0 && <span className="rounded-full bg-red-600 px-3 py-1 text-[10px] font-black text-white">{off}% {tr("OFF", "छुट")}</span>}
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col p-5">
@@ -106,12 +111,17 @@ export default function ProductsExplorer({ products: input }: { products: (ShopP
                           <span className="text-xl font-black text-slate-950">{npr(p.price)}</span>
                           {p.mrp && p.mrp > p.price && <span className="text-sm text-slate-400 line-through">{npr(p.mrp)}</span>}
                         </>
-                      ) : <span className="text-sm font-bold text-slate-600">Price on request</span>}
+                      ) : <span className="text-sm font-bold text-slate-600">{tr("Price on request", "मूल्य सोधपुछमा")}</span>}
                     </div>
                     <p className={`mt-1 text-xs font-bold ${p.availability === "in" ? "text-emerald-600" : p.availability === "out" ? "text-red-600" : "text-slate-500"}`}>
-                      {p.availability === "in" ? (p.stockQty !== null && p.stockQty <= 3 ? `Only ${p.stockQty} left` : "In stock") : p.availability === "out" ? "Out of stock" : "Ask for availability"}
+                      {p.availability === "in"
+                        ? (p.stockQty !== null && p.stockQty <= 3 ? tr(`Only ${p.stockQty} left`, `${p.stockQty} वटा मात्र बाँकी`) : tr("In stock", "स्टकमा छ"))
+                        : p.availability === "out" ? tr("Out of stock", "स्टकमा छैन") : tr("Ask for availability", "उपलब्धता सोध्नुहोस्")}
                     </p>
-                    <div className="mt-auto pt-4"><AddToCart product={p} /></div>
+                    <div className="mt-auto space-y-2 pt-4">
+                      <AddToCart product={p} />
+                      <CompareButton id={p.id} className="w-full text-center text-xs font-bold text-slate-600 hover:text-amber-600" />
+                    </div>
                   </div>
                 </article>
               </Reveal>

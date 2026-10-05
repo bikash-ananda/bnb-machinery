@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AddToCart from "@/components/shop/AddToCart";
+import CompareButton from "@/components/shop/CompareButton";
 import Gallery from "@/components/shop/Gallery";
+import Tx from "@/components/shop/Tx";
 import SafeImage from "@/components/ui/SafeImage";
 import { company } from "@/data/company";
 import { getShopProduct, getShopProducts } from "@/lib/server/catalog";
@@ -41,7 +43,7 @@ export default async function ProductPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <nav aria-label="Breadcrumb" className="text-sm text-slate-500">
-          <Link href="/products" className="font-semibold hover:text-amber-600">Shop</Link> / <span>{p.category}</span> / <span className="text-slate-800">{p.name}</span>
+          <Link href="/products" className="font-semibold hover:text-amber-600"><Tx en="Shop" ne="पसल" /></Link> / <span>{p.category}</span> / <span className="text-slate-800">{p.name}</span>
         </nav>
 
         <div className="mt-6 grid gap-10 lg:grid-cols-2">
@@ -51,7 +53,7 @@ export default async function ProductPage({ params }: Props) {
             <p className="text-sm font-extrabold uppercase tracking-wider text-amber-600">{p.brand}</p>
             <h1 className="mt-1 text-3xl font-black text-slate-950 sm:text-4xl">{p.name}</h1>
             {p.nameNe && <p className="mt-1 text-lg text-slate-600">{p.nameNe}</p>}
-            {p.model && <p className="mt-2 text-sm text-slate-500">Model: <b>{p.model}</b></p>}
+            {p.model && <p className="mt-2 text-sm text-slate-500"><Tx en="Model" ne="मोडल" />: <b>{p.model}</b></p>}
 
             <div className="mt-5 flex flex-wrap items-baseline gap-3">
               {p.price !== null ? (
@@ -60,12 +62,12 @@ export default async function ProductPage({ params }: Props) {
                   {p.mrp && p.mrp > p.price && <span className="text-lg text-slate-400 line-through">{npr(p.mrp)}</span>}
                   {off > 0 && <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">{off}% OFF</span>}
                 </>
-              ) : <span className="text-2xl font-black text-slate-700">Price on request</span>}
+              ) : <span className="text-2xl font-black text-slate-700"><Tx en="Price on request" ne="मूल्य सोधपुछमा" /></span>}
             </div>
             <p className={`mt-2 text-sm font-bold ${p.availability === "in" ? "text-emerald-600" : p.availability === "out" ? "text-red-600" : "text-slate-500"}`}>
-              {p.availability === "in" ? (p.stockQty !== null && p.stockQty <= 3 ? `Only ${p.stockQty} left` : "In stock") : p.availability === "out" ? "Out of stock" : "Contact us to confirm availability"}
+              {p.availability === "in" ? (p.stockQty !== null && p.stockQty <= 3 ? <Tx en={`Only ${p.stockQty} left`} ne={`${p.stockQty} वटा मात्र बाँकी`} /> : <Tx en="In stock" ne="स्टकमा छ" />) : p.availability === "out" ? <Tx en="Out of stock" ne="स्टकमा छैन" /> : <Tx en="Contact us to confirm availability" ne="उपलब्धता पुष्टि गर्न हामीलाई सम्पर्क गर्नुहोस्" />}
             </p>
-            <p className="mt-1 text-xs text-slate-500">Final price, delivery cost and availability are confirmed by our team before you pay.</p>
+            <p className="mt-1 text-xs text-slate-500"><Tx en="Final price, delivery cost and availability are confirmed by our team before you pay." ne="तिर्नुअघि अन्तिम मूल्य, डेलिभरी खर्च र उपलब्धता हाम्रो टोलीले पुष्टि गर्नेछ।" /></p>
 
             {p.description && <p className="mt-6 leading-7 text-slate-700">{p.description}</p>}
 
@@ -73,15 +75,16 @@ export default async function ProductPage({ params }: Props) {
 
             <div className="mt-5 flex flex-wrap gap-3">
               <a href={`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(ask)}`} target="_blank" rel="noopener noreferrer"
-                className="rounded-xl border border-emerald-600 px-5 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50">💬 Ask on WhatsApp</a>
-              <a href={`tel:${company.contact.phoneRaw}`} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white">☎ Call us</a>
+                className="rounded-xl border border-emerald-600 px-5 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50">💬 <Tx en="Ask on WhatsApp" ne="WhatsApp मा सोध्नुहोस्" /></a>
+              <a href={`tel:${company.contact.phoneRaw}`} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white">☎ <Tx en="Call us" ne="फोन गर्नुहोस्" /></a>
+              <CompareButton id={p.id} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white" />
             </div>
           </div>
         </div>
 
         {p.specs.length > 0 && (
           <section className="mt-12" aria-label="Specifications">
-            <h2 className="text-2xl font-black">Specifications</h2>
+            <h2 className="text-2xl font-black"><Tx en="Specifications" ne="विशेषताहरू" /></h2>
             <dl className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
               {p.specs.map((s) => (
                 <div key={s.name} className="grid grid-cols-3 gap-4 px-5 py-3 text-sm"><dt className="font-bold text-slate-600">{s.name}</dt><dd className="col-span-2 text-slate-900">{s.value}</dd></div>
@@ -92,12 +95,12 @@ export default async function ProductPage({ params }: Props) {
 
         {related.length > 0 && (
           <section className="mt-14" aria-label="Related products">
-            <h2 className="text-2xl font-black">You may also need</h2>
+            <h2 className="text-2xl font-black"><Tx en="You may also need" ne="तपाईंलाई यी पनि चाहिन सक्छ" /></h2>
             <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {related.map((r) => (
                 <Link key={r.id} href={`/products/${r.slug}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-1 hover:border-amber-400 hover:shadow-lg">
                   <SafeImage src={r.image} alt={r.name} contain className="aspect-square w-full bg-slate-100 p-4" />
-                  <div className="p-4"><p className="font-extrabold">{r.name}</p><p className="mt-1 text-sm text-slate-600">{r.price !== null ? npr(r.price) : "Price on request"}</p></div>
+                  <div className="p-4"><p className="font-extrabold">{r.name}</p><p className="mt-1 text-sm text-slate-600">{r.price !== null ? npr(r.price) : <Tx en="Price on request" ne="मूल्य सोधपुछमा" />}</p></div>
                 </Link>
               ))}
             </div>

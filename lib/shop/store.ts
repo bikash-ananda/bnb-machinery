@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from "react";
 
 export type CartItem = { id: string; name: string; price: number | null; image: string; slug: string; qty: number };
-type State = { cart: CartItem[]; wish: string[]; open: boolean };
+type State = { cart: CartItem[]; wish: string[]; compare: string[]; open: boolean };
 
 const KEY = "bnb-shop-v1";
-const EMPTY: State = { cart: [], wish: [], open: false };
+const EMPTY: State = { cart: [], wish: [], compare: [], open: false };
 let cache: State | null = null;
 const listeners = new Set<() => void>();
 
@@ -13,13 +13,13 @@ const isItem = (i: unknown): i is CartItem => {
   return !!o && typeof o.id === "string" && typeof o.name === "string" && typeof o.slug === "string" &&
     typeof o.image === "string" && typeof o.qty === "number" && (o.price === null || typeof o.price === "number");
 };
+const strings = (v: unknown, max: number) => (Array.isArray(v) ? v.filter((w): w is string => typeof w === "string").slice(0, max) : []);
 
 function load(): State {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || "{}") as { cart?: unknown; wish?: unknown };
+    const raw = JSON.parse(localStorage.getItem(KEY) || "{}") as { cart?: unknown; wish?: unknown; compare?: unknown };
     const cart = Array.isArray(raw.cart) ? raw.cart.filter(isItem).slice(0, 50).map((i) => ({ ...i, qty: Math.min(99, Math.max(1, Math.round(i.qty))) })) : [];
-    const wish = Array.isArray(raw.wish) ? raw.wish.filter((w): w is string => typeof w === "string").slice(0, 200) : [];
-    return { cart, wish, open: false };
+    return { cart, wish: strings(raw.wish, 200), compare: strings(raw.compare, 3), open: false };
   } catch {
     return EMPTY;
   }
@@ -33,7 +33,7 @@ function read(): State {
 
 function write(next: State) {
   cache = next;
-  try { localStorage.setItem(KEY, JSON.stringify({ cart: next.cart, wish: next.wish })); } catch {}
+  try { localStorage.setItem(KEY, JSON.stringify({ cart: next.cart, wish: next.wish, compare: next.compare })); } catch {}
   listeners.forEach((l) => l());
 }
 
@@ -65,6 +65,15 @@ export function toggleWish(id: string) {
   const s = read();
   write({ ...s, wish: s.wish.includes(id) ? s.wish.filter((w) => w !== id) : [...s.wish, id] });
 }
+/** Returns false when the compare list is already full (3). */
+export function toggleCompare(id: string) {
+  const s = read();
+  if (s.compare.includes(id)) { write({ ...s, compare: s.compare.filter((c) => c !== id) }); return true; }
+  if (s.compare.length >= 3) return false;
+  write({ ...s, compare: [...s.compare, id] });
+  return true;
+}
+export const clearCompare = () => write({ ...read(), compare: [] });
 
 export const cartCount = (s: State) => s.cart.reduce((n, c) => n + c.qty, 0);
 export const cartTotal = (s: State) => s.cart.reduce((n, c) => n + (c.price ?? 0) * c.qty, 0);
