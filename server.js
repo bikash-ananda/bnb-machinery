@@ -1,5 +1,5 @@
-﻿const http = require("http");
-const next = require("next");
+import http from "http";
+import next from "next";
 
 const port = parseInt(process.env.PORT || "3000", 10);
 const hostname = "0.0.0.0";
@@ -21,3 +21,4 @@ app.prepare().then(() => {
       console.log(`> Next.js production server running on port ${port}`);
     });
 });
+
