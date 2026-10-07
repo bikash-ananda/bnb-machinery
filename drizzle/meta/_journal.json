@@ -5,15 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1791380516941,
-      "tag": "0000_ledger_guard",
+      "when": 1791416931565,
+      "tag": "0000_wise_quasar",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1791380551169,
-      "tag": "0001_ledger_guard",
+      "when": 1791417002744,
+      "tag": "0001_audit_guards",
       "breakpoints": true
     }
   ]

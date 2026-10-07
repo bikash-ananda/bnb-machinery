@@ -1,10 +1,11 @@
+import { sql } from "drizzle-orm";
 import { index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { createdAt, paisa } from "../../db/columns";
 import { products } from "../catalog/schema";
 import { customers } from "../customers/schema";
 
 const qty = (name: string) => numeric(name, { precision: 14, scale: 3, mode: "number" });
-const zero = () => BigInt(0);
+const zero = () => sql`0`;
 
 // status: NEW | CONFIRMED | PACKED | DISPATCHED | READY_FOR_PICKUP | COMPLETED | CANCELLED
 // channel: WEB | POS | WHATSAPP | PHONE      paymentStatus: UNPAID | PARTIAL | PAID | REFUNDED
@@ -44,7 +45,7 @@ export const orderItems = pgTable("order_items", {
   qty: qty("qty").notNull(),
   unitPaisa: paisa("unit_paisa").notNull(),
   discountPaisa: paisa("discount_paisa").notNull().default(zero()),
-  vatRateBp: integer("vat_rate_bp").notNull().default(0),
+  vatRateBp: integer("vat_rate_bp").notNull().default(0),  taxCategory: text("tax_category").notNull().default("STANDARD"),
   vatPaisa: paisa("vat_paisa").notNull().default(zero()),
   linePaisa: paisa("line_paisa").notNull(),
 });
@@ -93,7 +94,7 @@ export const invoiceItems = pgTable("invoice_items", {
   qty: qty("qty").notNull(),
   unitPaisa: paisa("unit_paisa").notNull(),
   discountPaisa: paisa("discount_paisa").notNull().default(zero()),
-  vatRateBp: integer("vat_rate_bp").notNull().default(0),
+  vatRateBp: integer("vat_rate_bp").notNull().default(0),  taxCategory: text("tax_category").notNull().default("STANDARD"),
   vatPaisa: paisa("vat_paisa").notNull().default(zero()),
   linePaisa: paisa("line_paisa").notNull(),
 });
@@ -113,3 +114,4 @@ export const payments = pgTable(
   },
   (t) => [index("payments_order_idx").on(t.orderId)],
 );
+

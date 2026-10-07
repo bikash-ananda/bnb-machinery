@@ -5,6 +5,8 @@ import { rateLimited } from "@/lib/server/ai";
 import { getShopProducts } from "@/lib/server/catalog";
 import { notifyNewOrder } from "@/lib/server/notify";
 import { dbRequest, hasSupabaseConfig } from "@/lib/server/supabase";
+import { createOrder } from "@/src/modules/sales/orders";
+import { InsufficientStockError } from "@/src/modules/inventory/service";
 
 export const runtime = "nodejs";
 
@@ -53,10 +55,10 @@ export async function POST(request: Request) {
   const unpriced = lines.filter((l) => l.price === null).length;
   const d = new Date();
   const yymmdd = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
-  const orderNo = `BB-${yymmdd}-${randomInt(1000, 10000)}`;
+  let orderNo = `MTN-${yymmdd}-${randomInt(1000, 10000)}`;
 
   let saved = false;
-  if (hasSupabaseConfig()) {
+  if (!process.env.DATABASE_URL && hasSupabaseConfig()) {
     try {
       await dbRequest("orders", {
         method: "POST",
@@ -69,6 +71,22 @@ export async function POST(request: Request) {
       });
       saved = true;
     } catch { saved = false; }
+  }
+
+  if (process.env.DATABASE_URL) {
+    try {
+      const o = await createOrder({
+        channel: "WEB",
+        customer: { name, phone, email, address, district },
+        delivery, payment, note,
+        items: lines.map((l) => ({ slug: l.id, qty: l.qty })),
+      });
+      orderNo = o.orderNo;
+      saved = true;
+    } catch (e) {
+      if (e instanceof InsufficientStockError) return fail(e.message, 409);
+      console.error("order save failed", e);
+    }
   }
 
   const summary = lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - Rs " + (l.price * l.qty).toLocaleString("en-IN") : " - price on request"}`).join("\n");
