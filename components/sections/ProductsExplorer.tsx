@@ -287,7 +287,7 @@ export default function ProductsExplorer({
 
             return (
               <Reveal key={p.id} delay={(i % 4) * 0.05}>
-                <article className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-xl">
+                <article data-tilt="" className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-400 hover:shadow-xl">
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                     <Link
                       href={`/products/${p.slug}`}

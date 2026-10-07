@@ -7,8 +7,6 @@ import {
 
 import "./globals.css";
 import Chatbot from "@/components/ai/Chatbot";
-import MobileBar from "@/components/layout/MobileBar";
-import FloatingContact from "@/components/layout/FloatingContact";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 
 const geistSans = Geist({
@@ -87,11 +85,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: languageScript }} />
       </head>
 
-      <body className="pb-12 sm:pb-0">
+      <body>
         <LanguageProvider>
           {children}
-          <FloatingContact />
-          <MobileBar />
           <Chatbot />
         </LanguageProvider>
       </body>

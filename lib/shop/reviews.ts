@@ -1,0 +1,2 @@
+export type Review = { id: string; name: string; rating: number; comment: string; created_at: string };
+export type ReviewSummary = { enabled: boolean; items: Review[]; count: number; avg: number; dist: number[] };

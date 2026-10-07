@@ -3,6 +3,7 @@ import Footer from "@/components/layout/Footer";
 import NoticeBar from "@/components/notices/NoticeBar";
 import OfferCard from "@/components/notices/OfferCard";
 import CartDrawer from "@/components/shop/CartDrawer";
+import TiltProvider from "@/components/ui/TiltProvider";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -13,6 +14,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <Footer />
       <CartDrawer />
       <OfferCard />
+      <TiltProvider />
     </>
   );
 }

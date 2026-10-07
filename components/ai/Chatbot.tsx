@@ -8,8 +8,13 @@ import { company } from "@/data/company";
 import { greeting, hasDevanagari, respond, speakable, type Flow, type Lang, type Reply } from "@/lib/chat/brain";
 import { needsAI } from "@/lib/chat/hybrid";
 import Draggable from "@/components/ui/Draggable";
+import { Camera, FileText, Mail, MapPin, MessageCircle, MessageSquare, Phone, PhoneCall, ShoppingCart } from "lucide-react";
+import SafeImage from "@/components/ui/SafeImage";
+import { cartCount, setDrawer, useShop } from "@/lib/shop/store";
+import { npr } from "@/lib/shop/types";
+import type { SearchHit } from "@/src/lib/search/engine";
 
-type Message = { id: number; role: "assistant" | "user"; reply?: Reply; content?: string };
+type Message = { id: number; role: "assistant" | "user"; reply?: Reply; content?: string; hits?: SearchHit[] };
 
 type RecResult = { isFinal: boolean; 0: { transcript: string } };
 type RecEvent = { resultIndex: number; results: ArrayLike<RecResult> };
@@ -63,6 +68,9 @@ export default function Chatbot() {
   const [status, setStatus] = useState<"idle" | "listening" | "speaking" | "thinking">("idle");
   const [interim, setInterim] = useState("");
   const [note, setNote] = useState("");
+  const [menu, setMenu] = useState(() => (saved?.messages.length ?? 1) <= 1);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const shop = useShop();
 
   const idRef = useRef(Math.max(0, ...(saved?.messages ?? []).map((m) => m.id)) + 1);
   const endRef = useRef<HTMLDivElement>(null);
@@ -475,6 +483,50 @@ export default function Chatbot() {
     afterReply(reply);
   }
 
+  async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    setMenu(false);
+    setMessages((m) => [...m, { id: idRef.current++, role: "user", content: T(lang, "Photo search", "फोटो खोज") }]);
+    setTyping(true);
+    let text = "";
+    let hits: SearchHit[] = [];
+    try {
+      const bmp = await createImageBitmap(f);
+      const scale = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * scale);
+      c.height = Math.round(bmp.height * scale);
+      const ctx = c.getContext("2d");
+      if (!ctx) throw new Error("canvas");
+      ctx.drawImage(bmp, 0, 0, c.width, c.height);
+      const blob = await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("blob"))), "image/jpeg", 0.82));
+      const body = new FormData();
+      body.append("file", blob, "photo.jpg");
+      const r = await fetch("/api/search/image", { method: "POST", body });
+      const d = (await r.json()) as { error?: string; names?: string[]; results?: SearchHit[] };
+      if (!r.ok) {
+        text =
+          d.error === "ai_disabled"
+            ? T(lang, "Photo search is not switched on yet. Please type the name, or send the photo on WhatsApp.", "फोटो खोज अहिले सक्रिय छैन। नाम लेख्नुहोस् वा फोटो WhatsApp मा पठाउनुहोस्।")
+            : d.error === "rate_limited"
+              ? T(lang, "Too many photo searches. Please wait a minute.", "धेरै फोटो खोज भयो। एक मिनेट पर्खनुहोस्।")
+              : T(lang, "I could not read that photo. Try a clearer one.", "फोटो पढ्न सकिएन। अझ स्पष्ट फोटो प्रयोग गर्नुहोस्।");
+      } else {
+        hits = d.results ?? [];
+        const guess = (d.names ?? []).slice(0, 2).join(", ");
+        text = hits.length
+          ? T(lang, `This looks like: ${guess}. Matching products:`, `यो यस्तो देखिन्छ: ${guess}। मिल्दा उत्पादनहरू:`)
+          : T(lang, "No match in our catalogue yet. Send the photo on WhatsApp and our team will identify and source it.", "हाम्रो सूचीमा अहिले मिलेन। फोटो WhatsApp मा पठाउनुहोस्, हाम्रो टोलीले पहिचान गरी खोजिदिन्छ।");
+      }
+    } catch {
+      text = T(lang, "Photo search failed. Please try again.", "फोटो खोज असफल भयो। फेरि प्रयास गर्नुहोस्।");
+    }
+    setMessages((m) => [...m, { id: idRef.current++, role: "assistant", content: text, hits }]);
+    setTyping(false);
+  }
+
   function closeChat() {
     endCall();
     setOpen(false);
@@ -496,6 +548,20 @@ export default function Chatbot() {
 
   if (pathname.startsWith("/staff")) return null;
 
+  const cartN = cartCount(shop);
+  const tile = "relative flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white p-2 text-center text-[11px] font-bold leading-tight text-slate-800 transition hover:-translate-y-0.5 hover:border-[var(--brand-accent)] hover:shadow-md";
+  type Act = { key: string; label: string; icon: React.ReactNode; href?: string; external?: boolean; onClick?: () => void; badge?: number };
+  const acts: Act[] = [
+    { key: "voice", label: T(lang, "Voice call", "भ्वाइस कल"), icon: <PhoneCall size={20} />, onClick: () => { setMenu(false); if (!call) startCall(); } },
+    { key: "photo", label: T(lang, "Photo search", "फोटो खोज"), icon: <Camera size={20} />, onClick: () => photoRef.current?.click() },
+    { key: "quote", label: T(lang, "Get quotation", "कोटेसन लिनुहोस्"), icon: <FileText size={20} />, onClick: () => { setMenu(false); send(T(lang, "Get a quote", "मूल्य/कोटेसन")); } },
+    { key: "inquiry", label: T(lang, "Send inquiry", "जिज्ञासा पठाउनुहोस्"), icon: <MessageSquare size={20} />, href: "/contact" },
+    { key: "call", label: T(lang, "Call us", "फोन गर्नुहोस्"), icon: <Phone size={20} />, href: `tel:${company.contact.phoneRaw}`, external: true },
+    { key: "wa", label: "WhatsApp", icon: <MessageCircle size={20} />, href: `https://wa.me/977${company.contact.whatsapp}`, external: true },
+    { key: "mail", label: "Email", icon: <Mail size={20} />, href: `mailto:${company.contact.email}`, external: true },
+    { key: "cart", label: T(lang, "My cart", "मेरो कार्ट"), icon: <ShoppingCart size={20} />, onClick: () => { closeChat(); setDrawer(true); }, badge: cartN },
+    { key: "visit", label: T(lang, "Visit store", "पसलमा आउनुहोस्"), icon: <MapPin size={20} />, href: "/location" },
+  ];
   const last = messages[messages.length - 1];
   const chips = !typing && last?.role === "assistant" ? last.reply?.chips : undefined;
   const linkCls = "inline-flex min-h-9 items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-slate-900 transition hover:bg-amber-100";
@@ -512,7 +578,7 @@ export default function Chatbot() {
         <section
           role="dialog"
           aria-label="B & B Machinery assistant"
-          className="fixed bottom-32 right-4 z-[60] flex h-[min(640px,calc(100vh-9rem))] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-2xl sm:bottom-24"
+          className="fixed bottom-24 right-4 z-[60] flex h-[min(640px,calc(100vh-8rem))] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-2xl sm:bottom-24"
         >
           <div className="flex items-center justify-between gap-2 bg-[var(--brand-primary)] px-3 py-3 text-white">
             <div className="flex min-w-0 items-center gap-2">
@@ -536,6 +602,7 @@ export default function Chatbot() {
               <button type="button" onClick={call ? endCall : startCall} title={T(lang, "Voice call", "भ्वाइस कल")} aria-label={call ? T(lang, "End voice call", "भ्वाइस कल काट्नुहोस्") : T(lang, "Start voice call", "भ्वाइस कल सुरु गर्नुहोस्")} className={`${hdrBtn} ${call ? "bg-red-600 text-white hover:bg-red-700" : ""}`}>
                 {"\u{1F4DE}"}
               </button>
+              <button type="button" onClick={() => setMenu((v) => !v)} aria-pressed={menu} aria-label={T(lang, "Quick actions", "द्रुत कार्य")} title={T(lang, "Quick actions", "द्रुत कार्य")} className={hdrBtn}>{"\u22EF"}</button>
               <button type="button" onClick={reset} aria-label="Restart chat" title="Restart" className={hdrBtn}>{"\u21BA"}</button>
               <button type="button" onClick={closeChat} aria-label="Close chat" className={`${hdrBtn} text-xl`}>×</button>
             </div>
@@ -548,10 +615,42 @@ export default function Chatbot() {
                 <button type="button" onClick={() => setNote("")} aria-label="Dismiss" className="font-bold">×</button>
               </div>
             )}
+            <input ref={photoRef} type="file" accept="image/*" capture="environment" onChange={onPhoto} className="hidden" tabIndex={-1} aria-hidden="true" />
+            {menu && (
+              <div className="grid grid-cols-3 gap-2">
+                {acts.map((a) => {
+                  const inner = (
+                    <>
+                      {a.icon}
+                      <span>{a.label}</span>
+                      {a.badge ? <span className="absolute right-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{a.badge}</span> : null}
+                    </>
+                  );
+                  if (a.onClick) return <button key={a.key} type="button" onClick={a.onClick} className={tile}>{inner}</button>;
+                  if (a.external) return <a key={a.key} href={a.href} target={a.href?.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className={tile}>{inner}</a>;
+                  return <Link key={a.key} href={a.href ?? "/"} onClick={closeChat} className={tile}>{inner}</Link>;
+                })}
+              </div>
+            )}
             {messages.map((m) => (
               <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[88%] whitespace-pre-line rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "rounded-br-md bg-[var(--brand-primary)] text-white" : "rounded-bl-md border border-[var(--border)] bg-white text-slate-800"}`}>
                   {m.content ?? m.reply?.text}
+                  {m.hits && m.hits.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {m.hits.slice(0, 4).map((h) => (
+                        <li key={h.id}>
+                          <Link href={`/products/${h.slug}`} onClick={closeChat} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 text-slate-900 hover:border-[var(--brand-accent)]">
+                            <SafeImage src={h.image} alt="" className="h-12 w-12 shrink-0 rounded-md" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs font-bold">{h.name}</span>
+                              <span className="block text-[11px] text-slate-500">{h.price !== null ? npr(h.price) : T(lang, "Price on request", "मूल्य सोध्नुहोस्")}</span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   {m.reply?.links && (
                     <div className="mt-3 flex flex-wrap gap-2">
                       {m.reply.links.map((l) =>
@@ -603,8 +702,8 @@ export default function Chatbot() {
                 className={`rounded-lg border px-3 py-2.5 text-base ${status === "listening" && !call ? "animate-pulse border-red-500 bg-red-50" : "border-[var(--border)] hover:bg-amber-50"}`}>
                 {"\u{1F3A4}"}
               </button>
-              <input
-                ref={inputRef}
+              <button type="button" onClick={() => photoRef.current?.click()} aria-label={T(lang, "Search by photo", "फोटोबाट खोज्नुहोस्")} title={T(lang, "Search by photo", "फोटोबाट खोज्नुहोस्")} className="rounded-lg border border-[var(--border)] px-3 py-2.5 text-base hover:bg-amber-50">{"\u{1F4F7}"}</button>
+              <input ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 maxLength={300}
@@ -621,19 +720,19 @@ export default function Chatbot() {
       )}
 
       {teaser && !open && (
-        <button type="button" onClick={toggle} className="fixed bottom-32 right-4 z-[60] max-w-[220px] rounded-2xl rounded-br-sm border border-[var(--border)] bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-xl sm:bottom-24">
+        <button type="button" onClick={toggle} className="fixed bottom-24 right-4 z-[60] max-w-[220px] rounded-2xl rounded-br-sm border border-[var(--border)] bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-xl sm:bottom-24">
           {T(lang, "Machine problem? Ask us 👋", "मेसिनमा समस्या छ? सोध्नुहोस् 👋")}
         </button>
       )}
 
-      <Draggable id="chat" className="fixed bottom-16 right-4 z-[60] sm:bottom-5 sm:right-5">
+      <Draggable id="chat" className="fixed bottom-5 right-4 z-[60] sm:right-5">
         <button
           type="button"
           onClick={toggle}
           aria-label={open ? "Close assistant" : "Open assistant"}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand-primary)] text-2xl text-white shadow-lg transition-transform hover:scale-105"
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand-primary)] text-2xl text-white shadow-lg transition-transform hover:scale-105"
         >
-          {open ? "×" : "\u{1F4AC}"}
+          {open ? "×" : "\u{1F4AC}"}{!open && cartN > 0 && <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-black text-white">{cartN}</span>}
         </button>
       </Draggable>
     </>
