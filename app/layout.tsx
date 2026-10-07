@@ -22,7 +22,8 @@ const geistMono = Geist_Mono({
 const nepaliFont = Noto_Sans_Devanagari({
   variable: "--font-nepali",
   subsets: ["devanagari"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

@@ -3,6 +3,7 @@ import { isAllowedOrigin } from "@/lib/server/auth";
 import { aiKey, rateLimited } from "@/lib/server/ai";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });

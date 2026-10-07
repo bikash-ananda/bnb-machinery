@@ -546,7 +546,7 @@ export default function Chatbot() {
     setMessages([{ id: idRef.current++, role: "assistant", reply: greeting(lang) }]);
   }
 
-  if (pathname.startsWith("/staff")) return null;
+  if (pathname.startsWith("/staff") || pathname.startsWith("/admin")) return null;
 
   const cartN = cartCount(shop);
   const tile = "relative flex min-h-[74px] flex-col items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-white p-2 text-center text-[11px] font-bold leading-tight text-slate-800 transition hover:-translate-y-0.5 hover:border-[var(--brand-accent)] hover:shadow-md";

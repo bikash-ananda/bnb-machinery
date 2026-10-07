@@ -10,6 +10,7 @@ import {
 } from "@/lib/server/supabase";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 type Context = { params: Promise<{ id: string }> };
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone", // needed for the Docker image (infra/Dockerfile)
+  output: process.env.VERCEL ? undefined : "standalone", // needed for the Docker image (infra/Dockerfile)
   poweredByHeader: false,
   async headers() {
     return [{

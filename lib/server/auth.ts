@@ -36,23 +36,33 @@ export function hasEmailDeliveryConfig() {
   return Boolean(process.env.RESEND_API_KEY?.trim() && process.env.OTP_FROM_EMAIL?.trim());
 }
 
+function allowedOrigins() {
+  const out = new Set<string>();
+  const add = (v: string | undefined) => {
+    if (!v) return;
+    try { out.add(new URL(v.startsWith("http") ? v : "https://" + v).origin); } catch {}
+  };
+  add(process.env.APP_ORIGIN?.trim());
+  // Vercel provides these automatically: this deployment's own addresses.
+  add(process.env.VERCEL_URL);
+  add(process.env.VERCEL_BRANCH_URL);
+  add(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  return out;
+}
+
 export function isAllowedOrigin(request: Request) {
   const origin = request.headers.get("origin");
   if (!origin) return false;
-
-  let expected = process.env.APP_ORIGIN?.trim();
-  if (!expected && process.env.NODE_ENV !== "production") {
-    expected = new URL(request.url).origin;
+  const allowed = allowedOrigins();
+  if (process.env.NODE_ENV !== "production") {
+    try { allowed.add(new URL(request.url).origin); } catch {}
   }
-  if (!expected) return false;
-
   try {
-    return new URL(origin).origin === new URL(expected).origin;
+    return allowed.has(new URL(origin).origin);
   } catch {
     return false;
   }
 }
-
 function otpHash(email: string, code: string) {
   const secret = process.env.OTP_HASH_SECRET;
   if (!secret || secret.length < 32) {

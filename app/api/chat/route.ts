@@ -3,6 +3,7 @@ import { isAllowedOrigin } from "@/lib/server/auth";
 import { aiKey, rateLimited, systemPrompt } from "@/lib/server/ai";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 type Msg = { role: "user" | "assistant"; content: string };
 type OutputItem = { type?: string; content?: { type?: string; text?: string }[] };

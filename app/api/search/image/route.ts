@@ -5,6 +5,7 @@ import { getShopProducts } from "@/lib/server/catalog";
 import { searchProducts } from "@/src/lib/search/engine";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 const MAX_BYTES = 4 * 1024 * 1024;
 
 const INSTRUCTIONS = `You help a Nepali machinery and tools shop identify an item from a customer photo.

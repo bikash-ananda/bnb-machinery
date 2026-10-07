@@ -495,3 +495,126 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .fx-zoom-in, .fx-zoom-out, .fx-pan-left, .fx-pan-right, .fx-pan-up, .fx-drift { animation: none; }
 }
+
+/* ===== 3D tilt cards (TiltProvider sets --rx/--ry/--gx/--gy) ===== */
+[data-tilt] {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease-out, box-shadow 0.3s;
+  will-change: transform;
+}
+[data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.35), transparent 55%);
+}
+[data-tilt]:hover::after { opacity: 1; }
+[data-tilt] img { transition: transform 0.35s ease-out; }
+[data-tilt]:hover img { transform: scale(1.06); }
+@media (prefers-reduced-motion: reduce) {
+  [data-tilt] { transform: none !important; }
+  [data-tilt]::after { display: none; }
+}
+
+/* ===== Hero photo slideshow (HeroBackdrop) ===== */
+@keyframes hero-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hero-zoom-in { from { transform: scale(1); } to { transform: scale(1.14); } }
+@keyframes hero-zoom-out { from { transform: scale(1.16); } to { transform: scale(1); } }
+@keyframes hero-pan-left { from { transform: scale(1.12) translateX(2.5%); } to { transform: scale(1.12) translateX(-2.5%); } }
+@keyframes hero-pan-right { from { transform: scale(1.12) translateX(-2.5%); } to { transform: scale(1.12) translateX(2.5%); } }
+@keyframes hero-pan-up { from { transform: scale(1.12) translateY(2.5%); } to { transform: scale(1.12) translateY(-2.5%); } }
+@keyframes hero-drift { from { transform: scale(1.05) translate(-2%, 1.5%); } to { transform: scale(1.15) translate(2%, -1.5%); } }
+.fx-zoom-in { animation: hero-zoom-in 9s ease-out forwards; }
+.fx-zoom-out { animation: hero-zoom-out 9s ease-out forwards; }
+.fx-pan-left { animation: hero-pan-left 9s ease-in-out forwards; }
+.fx-pan-right { animation: hero-pan-right 9s ease-in-out forwards; }
+.fx-pan-up { animation: hero-pan-up 9s ease-in-out forwards; }
+.fx-drift { animation: hero-drift 9s ease-in-out forwards; }
+.hero-adaptive, .hero-adaptive :is(h1, h2, h3, p) { transition: color 0.9s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-zoom-in, .fx-zoom-out, .fx-pan-left, .fx-pan-right, .fx-pan-up, .fx-drift { animation: none; }
+}
+
+/* ===== Hero photo slideshow (HeroBackdrop) ===== */
+@keyframes hero-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hero-zoom-in { from { transform: scale(1); } to { transform: scale(1.14); } }
+@keyframes hero-zoom-out { from { transform: scale(1.16); } to { transform: scale(1); } }
+@keyframes hero-pan-left { from { transform: scale(1.12) translateX(2.5%); } to { transform: scale(1.12) translateX(-2.5%); } }
+@keyframes hero-pan-right { from { transform: scale(1.12) translateX(-2.5%); } to { transform: scale(1.12) translateX(2.5%); } }
+@keyframes hero-pan-up { from { transform: scale(1.12) translateY(2.5%); } to { transform: scale(1.12) translateY(-2.5%); } }
+@keyframes hero-drift { from { transform: scale(1.05) translate(-2%, 1.5%); } to { transform: scale(1.15) translate(2%, -1.5%); } }
+.fx-zoom-in { animation: hero-zoom-in 9s ease-out forwards; }
+.fx-zoom-out { animation: hero-zoom-out 9s ease-out forwards; }
+.fx-pan-left { animation: hero-pan-left 9s ease-in-out forwards; }
+.fx-pan-right { animation: hero-pan-right 9s ease-in-out forwards; }
+.fx-pan-up { animation: hero-pan-up 9s ease-in-out forwards; }
+.fx-drift { animation: hero-drift 9s ease-in-out forwards; }
+.hero-adaptive, .hero-adaptive :is(h1, h2, h3, p) { transition: color 0.9s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-zoom-in, .fx-zoom-out, .fx-pan-left, .fx-pan-right, .fx-pan-up, .fx-drift { animation: none; }
+}
+
+/* ===== 3D tilt cards (TiltProvider sets --rx/--ry/--gx/--gy) ===== */
+[data-tilt] {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.18s ease-out, box-shadow 0.3s;
+  will-change: transform;
+}
+[data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.35), transparent 55%);
+}
+[data-tilt]:hover::after { opacity: 1; }
+[data-tilt] img { transition: transform 0.35s ease-out; }
+[data-tilt]:hover img { transform: scale(1.06); }
+@media (prefers-reduced-motion: reduce) {
+  [data-tilt] { transform: none !important; }
+  [data-tilt]::after { display: none; }
+}
+
+/* ===== Hero photo slideshow (HeroBackdrop) ===== */
+@keyframes hero-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes hero-zoom-in { from { transform: scale(1); } to { transform: scale(1.14); } }
+@keyframes hero-zoom-out { from { transform: scale(1.16); } to { transform: scale(1); } }
+@keyframes hero-pan-left { from { transform: scale(1.12) translateX(2.5%); } to { transform: scale(1.12) translateX(-2.5%); } }
+@keyframes hero-pan-right { from { transform: scale(1.12) translateX(-2.5%); } to { transform: scale(1.12) translateX(2.5%); } }
+@keyframes hero-pan-up { from { transform: scale(1.12) translateY(2.5%); } to { transform: scale(1.12) translateY(-2.5%); } }
+@keyframes hero-drift { from { transform: scale(1.05) translate(-2%, 1.5%); } to { transform: scale(1.15) translate(2%, -1.5%); } }
+.fx-zoom-in { animation: hero-zoom-in 9s ease-out forwards; }
+.fx-zoom-out { animation: hero-zoom-out 9s ease-out forwards; }
+.fx-pan-left { animation: hero-pan-left 9s ease-in-out forwards; }
+.fx-pan-right { animation: hero-pan-right 9s ease-in-out forwards; }
+.fx-pan-up { animation: hero-pan-up 9s ease-in-out forwards; }
+.fx-drift { animation: hero-drift 9s ease-in-out forwards; }
+.hero-adaptive, .hero-adaptive :is(h1, h2, h3, p) { transition: color 0.9s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-zoom-in, .fx-zoom-out, .fx-pan-left, .fx-pan-right, .fx-pan-up, .fx-drift { animation: none; }
+}
+
+/* ===== One font system for English + Nepali =====
+   Latin letters use Geist, Devanagari letters automatically use Noto Sans Devanagari. */
+@theme inline {
+  --font-sans: var(--font-geist-sans), var(--font-nepali), ui-sans-serif, system-ui, "Nirmala UI", "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+body {
+  font-family: var(--font-geist-sans), var(--font-nepali), ui-sans-serif, system-ui, "Nirmala UI", "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+html[lang="ne"] body { line-height: 1.7; }

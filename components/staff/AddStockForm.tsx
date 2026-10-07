@@ -75,6 +75,20 @@ function uploadWithProgress(
   });
 }
 
+/** Shrinks big phone photos in the browser (hosting rejects uploads over about 4.5 MB). */
+async function shrinkImage(file: File): Promise<File> {
+  if (file.size < 1_200_000) return file;
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, 1800 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas");
+  c.width = Math.round(bmp.width * scale);
+  c.height = Math.round(bmp.height * scale);
+  const ctx = c.getContext("2d");
+  if (!ctx) throw new Error("canvas");
+  ctx.drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("blob"))), "image/jpeg", 0.86));
+  return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+}
 export default function AddStockForm() {
   const router = useRouter();
   const { t } = useLanguage();
@@ -159,7 +173,13 @@ export default function AddStockForm() {
     setError("");
     setProgress(0);
     const form = new FormData();
-    files.forEach((image) => form.append("images", image.file));
+    try {
+      for (const image of files) form.append("images", await shrinkImage(image.file));
+    } catch {
+      setError(t("imageUploadError"));
+      setBusy(false);
+      return;
+    }
 
     try {
       const result = await uploadWithProgress(form, setProgress);
