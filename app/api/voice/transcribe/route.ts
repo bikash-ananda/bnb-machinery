@@ -26,8 +26,8 @@ export async function POST(request: Request) {
   fd.append(
     "prompt",
     lang === "ne"
-      ? "B & B Machinery, पावर टिलर, रिपर, कर्न सेलर, चेनसो, इन्जिन, स्पेयर पार्ट्स, पोखरा, बाग्लुङ"
-      : "B & B Machinery, power tiller, reaper, corn sheller, chainsaw, engine, spare parts, Pokhara, Baglung",
+      ? "Machinery Tools Nepal, पावर टिलर, रिपर, कर्न सेलर, चेनसो, इन्जिन, स्पेयर पार्ट्स, पोखरा, बाग्लुङ"
+      : "Machinery Tools Nepal, power tiller, reaper, corn sheller, chainsaw, engine, spare parts, Pokhara, Baglung",
   );
 
   try {

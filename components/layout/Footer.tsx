@@ -192,7 +192,7 @@ export default function Footer() {
         <div className="mt-10 border-t border-white/10 pt-6">
           <div className="flex flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
             <p>
-              © {new Date().getFullYear()} {company.name}. <LocalizedText id="rightsReserved" />
+              © {new Date().getFullYear()} {company.name} / {company.legalName}. <LocalizedText id="rightsReserved" />
             </p>
 
             <p>

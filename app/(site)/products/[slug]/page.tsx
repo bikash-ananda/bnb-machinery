@@ -32,7 +32,7 @@ export default async function ProductPage({ params }: Props) {
   const related = all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4);
   const mrp = p.mrp ?? extras.mrp;
   const off = discountPct({ price: p.price, mrp });
-  const ask = `Hello B & B Machinery, I am interested in: ${p.name}${p.model ? " (" + p.model + ")" : ""}`;
+  const ask = `Hello Machinery Tools Nepal, I am interested in: ${p.name}${p.model ? " (" + p.model + ")" : ""}`;
 
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description,

@@ -14,7 +14,7 @@ export default function QuoteForm({ defaultItem = "" }: { defaultItem?: string }
       return;
     }
     setErr("");
-    const text = `Hello B & B Machinery,\nName: ${f.name}\nPhone: ${f.phone}\nLooking for: ${f.item}\n${f.msg}`;
+    const text = `Hello Machinery Tools Nepal,\nName: ${f.name}\nPhone: ${f.phone}\nLooking for: ${f.item}\n${f.msg}`;
     window.open(`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
 

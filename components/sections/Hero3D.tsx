@@ -50,11 +50,11 @@ export default function Hero3D() {
           <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 sm:text-lg">
             <span className="lang-en">
               Mechanical tools, machinery, spare parts and technical support
-              from B & B Machinery in Pokhara.
+              from Machinery Tools Nepal in Pokhara.
             </span>
 
             <span className="lang-ne">
-              पोखरास्थित B & B Machinery बाट मेकानिकल टुल्स, मेसिनरी,
+              पोखरास्थित Machinery Tools Nepal बाट मेकानिकल टुल्स, मेसिनरी,
               स्पेयर पार्ट्स तथा प्राविधिक सहयोग।
             </span>
           </p>

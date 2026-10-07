@@ -21,7 +21,7 @@ export default function AdminShell({ user, nav, children }: { user: { name: stri
   const sidebar = (
     <nav aria-label="Admin" className="flex h-full flex-col overflow-y-auto p-4">
       <Link href="/admin" onClick={() => setOpen(false)} className="mb-6 block px-2">
-        <span className="block text-base font-black text-white">B & B Machinery</span>
+        <span className="block text-base font-black text-white">Machinery Tools Nepal</span>
         <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-400">Admin</span>
       </Link>
       {nav.map((g) => (

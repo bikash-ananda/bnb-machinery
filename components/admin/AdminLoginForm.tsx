@@ -67,7 +67,7 @@ export default function AdminLoginForm() {
   return (
     <form onSubmit={submitPassword} className="relative w-full max-w-md space-y-5 rounded-3xl bg-white p-8 shadow-2xl" noValidate>
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.25em] text-amber-600">B & B Machinery</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.25em] text-amber-600">Machinery Tools Nepal</p>
         <h1 className="mt-1 text-2xl font-black text-slate-950">Admin sign in</h1>
       </div>
       <label className="block text-sm font-semibold text-slate-700">Email

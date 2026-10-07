@@ -23,7 +23,7 @@ export function rateLimited(request: Request, bucket: string, max: number, windo
 export function systemPrompt(lang: "en" | "ne") {
   const productLines = products.map((p) => `- ${p.name} (${p.category}): ${p.description}`).join("\n");
   const serviceLines = services.map((s) => `- ${s.title}: ${s.description}`).join("\n");
-  return `You are the voice and chat assistant of ${company.name} Suppliers, a machinery shop in ${company.location.address}, ${company.location.district}, ${company.location.country}.
+  return `You are the voice and chat assistant of ${company.name}, a machinery shop in ${company.location.address}, ${company.location.district}, ${company.location.country}.
 
 KNOWN BUSINESS FACTS (nothing else is known):
 - Phone / WhatsApp / Viber: ${company.contact.phone}. Email: ${company.contact.email}.

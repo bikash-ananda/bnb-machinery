@@ -78,7 +78,7 @@ export const topics: Topic[] = [
   {
     id: "about",
     words: ["about", "who", "company", "bnb", "b b", "history", "बारे", "कम्पनी", "पसल", "को हो"],
-    en: "B & B Machinery Suppliers is at Baglung Buspark, Pokhara (Kaski). We supply agricultural machinery, power and mechanical tools, machinery parts and technical services - repair, maintenance, installation, rental support and consultation - for customers in Kaski, Baglung, Mustang and Syangja. Call or WhatsApp +977 9856088600.",
-    ne: "B & B Machinery Suppliers बाग्लुङ बसपार्क, पोखरा (कास्की) मा अवस्थित छ। हामी कृषि मेसिनरी, पावर तथा मेकानिकल टुल, मेसिनरीका पार्ट्स र प्राविधिक सेवा — मर्मत, सम्भार, जडान, भाडा सहयोग र परामर्श — कास्की, बाग्लुङ, मुस्ताङ र स्याङ्जाका ग्राहकलाई उपलब्ध गराउँछौँ। फोन वा WhatsApp: +977 9856088600।",
+    en: "Machinery Tools Nepal is at Baglung Buspark, Pokhara (Kaski). We supply agricultural machinery, power and mechanical tools, machinery parts and technical services - repair, maintenance, installation, rental support and consultation - for customers in Kaski, Baglung, Mustang and Syangja. Call or WhatsApp +977 9856088600.",
+    ne: "Machinery Tools Nepal बाग्लुङ बसपार्क, पोखरा (कास्की) मा अवस्थित छ। हामी कृषि मेसिनरी, पावर तथा मेकानिकल टुल, मेसिनरीका पार्ट्स र प्राविधिक सेवा — मर्मत, सम्भार, जडान, भाडा सहयोग र परामर्श — कास्की, बाग्लुङ, मुस्ताङ र स्याङ्जाका ग्राहकलाई उपलब्ध गराउँछौँ। फोन वा WhatsApp: +977 9856088600।",
   },
 ];

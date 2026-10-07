@@ -103,7 +103,7 @@ export async function sendLoginOtp(email: string, code: string) {
     body: JSON.stringify({
       from,
       to: [email],
-      subject: "Your B & B Machinery staff verification code",
+      subject: "Your Machinery Tools Nepal staff verification code",
       text:
         "Your one-time verification code is " +
         code +

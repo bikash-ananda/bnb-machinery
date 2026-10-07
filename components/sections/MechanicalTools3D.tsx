@@ -763,7 +763,7 @@ export default function MechanicalTools3D() {
         <div className="hero-copy">
           <div className="eyebrow">
             <span className="eyebrow-dot" />
-            B&B MACHINERY · POKHARA
+            MACHINERY TOOLS NEPAL · POKHARA
           </div>
 
           <h1 className="hero-title">

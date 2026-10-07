@@ -9,7 +9,7 @@ import { npr } from "@/lib/shop/types";
 
 export const metadata: Metadata = {
   title: "Deli — Main Distributor for Gandaki & Dhaulagiri",
-  description: "B & B Machinery is the main distributor of Deli for Gandaki and Dhaulagiri. Browse Deli products or request a quotation.",
+  description: "Machinery Tools Nepal is the main distributor of Deli for Gandaki and Dhaulagiri. Browse Deli products or request a quotation.",
 };
 export const revalidate = 60;
 

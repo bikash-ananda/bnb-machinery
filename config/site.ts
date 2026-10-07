@@ -1,7 +1,8 @@
 // Company profile + navigation. Edit here (later: overridden by the `settings` table in the admin console).
 export const company = {
-  name: "B & B Machinery",
-  shortName: "B&B Machinery",
+  name: "Machinery Tools Nepal",
+  shortName: "Machinery Tools Nepal",
+  legalName: "B & B Machinery Suppliers",
 
   location: {
     address: "Baglung Buspark, Pokhara",

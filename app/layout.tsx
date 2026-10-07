@@ -28,24 +28,24 @@ const nepaliFont = Noto_Sans_Devanagari({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_ORIGIN || "http://localhost:3000"),
-  openGraph: { type: "website", siteName: "B & B Machinery", locale: "en_NP", images: ["/images/IMG-20261004-WA0010.jpg"] },
+  openGraph: { type: "website", siteName: "Machinery Tools Nepal", locale: "en_NP", images: ["/images/IMG-20261004-WA0010.jpg"] },
   title: {
-    default: "B & B Machinery | Machinery & Machinery Parts in Pokhara",
-    template: "%s | B & B Machinery",
+    default: "Machinery Tools Nepal | Machinery & Machinery Parts in Pokhara",
+    template: "%s | Machinery Tools Nepal",
   },
   description:
-    "B & B Machinery provides machinery, machinery parts, repair, maintenance, installation, spare parts and technical support in Pokhara and Western Nepal.",
+    "Machinery Tools Nepal provides machinery, machinery parts, repair, maintenance, installation, spare parts and technical support in Pokhara and Western Nepal.",
   keywords: [
-    "B & B Machinery",
+    "Machinery Tools Nepal",
     "machinery Pokhara",
     "machinery parts Pokhara",
     "machinery spare parts",
     "machinery repair",
     "machinery maintenance",
   ],
-  authors: [{ name: "B & B Machinery" }],
-  creator: "B & B Machinery",
-  publisher: "B & B Machinery",
+  authors: [{ name: "Machinery Tools Nepal" }],
+  creator: "Machinery Tools Nepal",
+  publisher: "Machinery Tools Nepal",
   robots: {
     index: true,
     follow: true,

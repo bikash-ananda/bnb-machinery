@@ -154,7 +154,7 @@ export default function ProductsExplorer({
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">
-              B&B Machinery
+              Machinery Tools Nepal
             </p>
 
             <h2 className="mt-1 text-2xl font-black text-slate-950">
@@ -268,7 +268,7 @@ export default function ProductsExplorer({
           </h3>
 
           <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">
-            Tell B&B Machinery what machine, tool or spare part you need.
+            Tell Machinery Tools Nepal what machine, tool or spare part you need.
             We can help you find or source it.
           </p>
 
@@ -303,7 +303,7 @@ export default function ProductsExplorer({
                       ) : (
                         <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 p-8 text-center">
                           <span className="text-sm font-bold text-slate-400">
-                            B&B Machinery
+                            Machinery Tools Nepal
                           </span>
                         </div>
                       )}

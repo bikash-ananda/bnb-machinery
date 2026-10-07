@@ -45,7 +45,7 @@ export async function deliverOtp(email: string, code: string) {
     method: "POST",
     headers: { authorization: "Bearer " + apiKey, "content-type": "application/json" },
     body: JSON.stringify({
-      from, to: [email], subject: "Your B & B Machinery admin sign-in code",
+      from, to: [email], subject: "Your Machinery Tools Nepal admin sign-in code",
       text: `Your one-time sign-in code is ${code}. It expires in 5 minutes. If you did not try to sign in, change your password.`,
     }),
     cache: "no-store",

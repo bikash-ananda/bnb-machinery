@@ -52,12 +52,12 @@ export default function Header() {
           href="/staff/login"
           onClick={() => setMobileOpen(false)}
           title={t("staffLogin")}
-          aria-label={"B & B Machinery · " + t("staffLogin")}
+          aria-label={"Machinery Tools Nepal · " + t("staffLogin")}
           className="group relative flex min-h-12 min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--brand-accent)]"
         >
           <SafeImage src="/images/logo.jpg" alt="" contain className="h-11 w-11 shrink-0 rounded-full border border-slate-200 bg-white" />
           <span className="min-w-0">
-            <span className="block truncate text-base font-bold tracking-tight text-[var(--brand-primary)] sm:text-lg">B & B Machinery</span>
+            <span className="block truncate text-base font-bold tracking-tight text-[var(--brand-primary)] sm:text-lg">Machinery Tools Nepal</span>
             <span className="hidden text-xs text-[var(--text-muted)] sm:block">{t("machineryParts")}</span>
           </span>
         </Link>

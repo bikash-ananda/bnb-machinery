@@ -52,7 +52,7 @@ function bestTopic(t: string) {
 const defaultChips = (lang: Lang) =>
   lang === "ne"
     ? ["कृषि मेसिन", "पावर टिलर", "मूल्य/कोटेसन", "स्पेयर पार्ट्स", "हाम्रो बारे", "ठेगाना"]
-    : ["Agriculture machines", "Power tiller", "Get a quote", "Spare parts", "About B & B", "Location"];
+    : ["Agriculture machines", "Power tiller", "Get a quote", "Spare parts", "About us", "Location"];
 
 const topicChips = (lang: Lang) =>
   lang === "ne"
@@ -66,14 +66,14 @@ export const speakable = (r: Reply) =>
 export function greeting(lang: Lang): Reply {
   return {
     text: L(lang,
-      "Namaste! 👋 I'm the B & B Machinery assistant. Ask me about agricultural machines (power tiller, reaper, corn sheller), tools, spare parts, prices or our shop — by typing or by voice. 🎤",
-      "नमस्ते! 👋 म B & B Machinery को सहायक हुँ। कृषि मेसिन (पावर टिलर, रिपर, कर्न सेलर), टुल, स्पेयर पार्ट्स, मूल्य वा हाम्रो पसलबारे लेखेर वा बोलेर सोध्नुहोस्। 🎤"),
+      "Namaste! 👋 I'm the Machinery Tools Nepal assistant. Ask me about agricultural machines (power tiller, reaper, corn sheller), tools, spare parts, prices or our shop — by typing or by voice. 🎤",
+      "नमस्ते! 👋 म Machinery Tools Nepal को सहायक हुँ। कृषि मेसिन (पावर टिलर, रिपर, कर्न सेलर), टुल, स्पेयर पार्ट्स, मूल्य वा हाम्रो पसलबारे लेखेर वा बोलेर सोध्नुहोस्। 🎤"),
     chips: defaultChips(lang),
   };
 }
 
 function finishQuote(lang: Lang, item: string, name: string, phone: string): Result {
-  const msg = `Hello B & B Machinery,\nName: ${name}\nPhone: ${phone}\nLooking for: ${item}`;
+  const msg = `Hello Machinery Tools Nepal,\nName: ${name}\nPhone: ${phone}\nLooking for: ${item}`;
   return {
     flow: null,
     reply: {

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   }
   if (!resolveAllowedRole(email)) {
     return NextResponse.json(
-      { error: "This email is not authorized to access the B & B Machinery staff system." },
+      { error: "This email is not authorized to access the Machinery Tools Nepal staff system." },
       { status: 403 },
     );
   }

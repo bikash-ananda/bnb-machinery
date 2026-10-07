@@ -577,17 +577,17 @@ export default function Chatbot() {
       {open && (
         <section
           role="dialog"
-          aria-label="B & B Machinery assistant"
+          aria-label="Machinery Tools Nepal assistant"
           className="fixed bottom-24 right-4 z-[60] flex h-[min(640px,calc(100vh-8rem))] w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-2xl sm:bottom-24"
         >
           <div className="flex items-center justify-between gap-2 bg-[var(--brand-primary)] px-3 py-3 text-white">
             <div className="flex min-w-0 items-center gap-2">
               <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-400 text-xs font-black text-slate-950">
-                B&B
+                MTN
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--brand-primary)] bg-emerald-400" />
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold">B & B {T(lang, "Assistant", "सहायक")}</p>
+                <p className="truncate text-sm font-bold">Machinery Tools {T(lang, "Assistant", "सहायक")}</p>
                 <p className="truncate text-[11px] text-slate-300">{T(lang, "Machinery help, 24/7", "मेसिनरी सहयोग, २४/७")}</p>
               </div>
             </div>

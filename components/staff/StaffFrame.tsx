@@ -45,7 +45,7 @@ export default function StaffFrame({
           <Link href="/staff" className="flex min-h-11 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500">
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--brand-primary)] text-xs font-bold text-white">B&B</span>
             <span>
-              <span className="block text-sm font-bold text-[var(--brand-primary)]">B & B Machinery</span>
+              <span className="block text-sm font-bold text-[var(--brand-primary)]">Machinery Tools Nepal</span>
               <span className="hidden text-xs text-[var(--text-muted)] sm:block">{t("internalOnly")}</span>
             </span>
           </Link>

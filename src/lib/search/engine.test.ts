@@ -5,7 +5,7 @@ const mk = (id: string, name: string, brand: string, category: string) => ({
   id, slug: id, name, brand, category, image: "", price: null,
 });
 const items = [
-  mk("corn-sheller", "Corn Sheller", "B & B Machinery", "Agricultural Machinery"),
+  mk("corn-sheller", "Corn Sheller", "Machinery Tools Nepal", "Agricultural Machinery"),
   mk("wrench", "Adjustable Wrench", "Deli", "Mechanical Tools"),
   mk("grinder", "Angle Grinder", "Deli", "Power Tools"),
 ];

@@ -14,7 +14,7 @@ import { npr } from "@/lib/shop/types";
 export const metadata: Metadata = {
   title: "Machinery, Tools & Spare Parts in Pokhara",
   description:
-    "B & B Machinery: machinery, tools and spare parts in Pokhara and Western Nepal. Main distributor of Deli for Gandaki and Dhaulagiri.",
+    "Machinery Tools Nepal: machinery, tools and spare parts in Pokhara and Western Nepal. Main distributor of Deli for Gandaki and Dhaulagiri.",
 };
 export const revalidate = 60;
 

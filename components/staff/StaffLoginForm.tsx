@@ -77,7 +77,7 @@ export default function StaffLoginForm() {
   return (
     <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white p-6 shadow-2xl sm:p-8">
       <div className="mb-7 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--brand-primary)] text-sm font-bold text-white">
-        B&B
+        MTN
       </div>
       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-700">
         <span>{t("internalOnly")}</span>

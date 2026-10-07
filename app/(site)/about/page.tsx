@@ -28,8 +28,8 @@ export default function AboutPage() {
           <div>
             <p className="text-lg leading-8 text-slate-700">
               <L
-                en={`B & B Machinery Suppliers is based at ${company.location.address}. We help farmers, workshops and businesses find the right machine, tool or spare part — and keep it running.`}
-                ne="B & B Machinery Suppliers बाग्लुङ बसपार्क, पोखरामा अवस्थित छ। हामी किसान, वर्कशप र व्यवसायीलाई सही मेसिन, औजार वा स्पेयर पार्ट छनोट गर्न र त्यसलाई चलिरहन सहयोग गर्छौँ।"
+                en={`Machinery Tools Nepal is based at ${company.location.address}. We help farmers, workshops and businesses find the right machine, tool or spare part — and keep it running.`}
+                ne="Machinery Tools Nepal बाग्लुङ बसपार्क, पोखरामा अवस्थित छ। हामी किसान, वर्कशप र व्यवसायीलाई सही मेसिन, औजार वा स्पेयर पार्ट छनोट गर्न र त्यसलाई चलिरहन सहयोग गर्छौँ।"
               />
             </p>
             <ul className="mt-6 grid gap-3 sm:grid-cols-2">

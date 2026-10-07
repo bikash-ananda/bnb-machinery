@@ -3,7 +3,7 @@ import StaffLoginForm from "@/components/staff/StaffLoginForm";
 import { getStaffSession } from "@/lib/server/auth";
 
 export const metadata = {
-  title: "Staff sign in | B & B Machinery",
+  title: "Staff sign in | Machinery Tools Nepal",
   robots: { index: false, follow: false },
 };
 

@@ -25,7 +25,7 @@ function fromDb(r: ProductRecord): ShopProduct {
     r.stock_status === "OUT_OF_STOCK" || qty === 0 ? "out" : r.stock_status === "AVAILABLE" || (qty ?? 0) > 0 ? "in" : "ask";
   return {
     id: r.id, slug: r.slug, name: r.name_en || r.name || "Product", nameNe: r.name_ne || undefined,
-    brand: r.brand_name || "B & B Machinery", category: r.category_name_en || "Machinery",
+    brand: r.brand_name || "Machinery Tools Nepal", category: r.category_name_en || "Machinery",
     image: images[0] ?? "", images, description: r.description_en || "", model: r.model || undefined,
     specs: (r.specifications ?? []).filter((s) => s && s.name && s.value),
     price: typeof r.price === "number" ? r.price : null, mrp: null,
