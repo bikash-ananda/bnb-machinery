@@ -7,6 +7,7 @@ import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { company } from "@/data/company";
 import { greeting, hasDevanagari, respond, speakable, type Flow, type Lang, type Reply } from "@/lib/chat/brain";
 import { needsAI } from "@/lib/chat/hybrid";
+import Draggable from "@/components/ui/Draggable";
 
 type Message = { id: number; role: "assistant" | "user"; reply?: Reply; content?: string };
 
@@ -625,14 +626,16 @@ export default function Chatbot() {
         </button>
       )}
 
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label={open ? "Close assistant" : "Open assistant"}
-        className="fixed bottom-16 right-4 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand-primary)] text-2xl text-white shadow-lg transition-transform hover:scale-105 sm:bottom-5 sm:right-5"
-      >
-        {open ? "×" : "\u{1F4AC}"}
-      </button>
+      <Draggable id="chat" className="fixed bottom-16 right-4 z-[60] sm:bottom-5 sm:right-5">
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label={open ? "Close assistant" : "Open assistant"}
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand-primary)] text-2xl text-white shadow-lg transition-transform hover:scale-105"
+        >
+          {open ? "×" : "\u{1F4AC}"}
+        </button>
+      </Draggable>
     </>
   );
 }

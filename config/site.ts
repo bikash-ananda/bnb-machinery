@@ -25,6 +25,7 @@ export const company = {
   },
 
   serviceAreas: ["Kaski", "Baglung", "Mustang", "Syangja"],
+  serviceAreasNe: ["कास्की", "बाग्लुङ", "मुस्ताङ", "स्याङ्जा"],
 
   languages: ["English", "नेपाली"],
 

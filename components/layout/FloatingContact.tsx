@@ -3,6 +3,7 @@
 import { company } from "@/data/company";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
+import Draggable from "@/components/ui/Draggable";
 
 export default function FloatingContact() {
   const pathname = usePathname();
@@ -10,7 +11,8 @@ export default function FloatingContact() {
   if (pathname.startsWith("/staff")) return null;
 
   return (
-    <div className="fixed bottom-5 left-5 z-50 hidden items-center gap-2 sm:flex">
+    <Draggable id="contact" className="fixed bottom-5 left-5 z-50 hidden sm:block">
+    <div className="flex items-center gap-2">
       <a
         href={`https://wa.me/${company.contact.whatsapp}`}
         target="_blank"
@@ -40,5 +42,6 @@ export default function FloatingContact() {
         Call
       </a>
     </div>
+    </Draggable>
   );
 }

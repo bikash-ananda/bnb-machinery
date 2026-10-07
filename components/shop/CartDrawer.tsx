@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import SafeImage from "@/components/ui/SafeImage";
+import Draggable from "@/components/ui/Draggable";
 import { cartCount, cartTotal, clearCart, clearCompare, removeItem, setDrawer, setQty, unpricedCount, useShop } from "@/lib/shop/store";
 import { useTr } from "@/lib/shop/tr";
 import { npr } from "@/lib/shop/types";
@@ -30,11 +31,13 @@ export default function CartDrawer() {
         </div>
       )}
 
+      <Draggable id="cart" className="fixed bottom-16 left-4 z-[55] sm:bottom-20 sm:left-5">
       <button type="button" onClick={() => setDrawer(true)} aria-label={`Open cart, ${count} items`}
-        className="fixed bottom-16 left-4 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-amber-400 text-2xl text-slate-950 shadow-lg transition hover:scale-105 sm:bottom-5 sm:left-5">
+        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-amber-400 text-2xl text-slate-950 shadow-lg transition hover:scale-105">
         {"\u{1F6D2}"}
         {count > 0 && <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-black text-white">{count}</span>}
       </button>
+      </Draggable>
 
       {s.open && (
         <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Shopping cart">
