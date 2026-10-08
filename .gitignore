@@ -45,3 +45,6 @@ next-env.d.ts
 hero-source/
 
 exports/
+
+# bot runtime data (unanswered questions, tickets, uploads)
+data/bot/

@@ -17,7 +17,8 @@
     "db:seed-accounts": "tsx src/db/seed-accounts.ts",
     "db:audit-check": "tsx src/db/audit-check.ts",
     "db:tax": "tsx src/db/set-tax.ts",
-    "db:smoke-purchase": "tsx src/db/smoke-purchase.ts"
+    "db:smoke-purchase": "tsx src/db/smoke-purchase.ts",
+    "db:smoke-pos": "tsx src/db/smoke-pos.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

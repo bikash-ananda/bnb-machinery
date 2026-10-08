@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { isAllowedOrigin } from "@/lib/server/auth";
 import { aiKey, rateLimited, systemPrompt } from "@/lib/server/ai";
+import { logUnanswered } from "@/lib/bot/gaps";
+import { retrieve } from "@/lib/bot/knowledge";
+import { knowledgeBlock, splitHandoff } from "@/src/lib/bot/reply";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
 
 type Msg = { role: "user" | "assistant"; content: string };
 type OutputItem = { type?: string; content?: { type?: string; text?: string }[] };
@@ -40,18 +42,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 
+  // Search with the last two customer messages so follow-ups like "and the price?" still work.
+  const question = messages[messages.length - 1].content;
+  const query = messages.filter((m) => m.role === "user").slice(-2).map((m) => m.content).join(" ");
+  const { hits, confident } = await retrieve(query);
+
   try {
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, store: false, instructions: systemPrompt(lang), input: messages, max_output_tokens: 600 }),
+      body: JSON.stringify({ model, store: false, instructions: systemPrompt(lang) + knowledgeBlock(hits, confident), input: messages, max_output_tokens: 600 }),
       cache: "no-store",
       signal: AbortSignal.timeout(25_000),
     });
     if (!res.ok) return NextResponse.json({ error: "ai_failed" }, { status: 502 });
-    const text = extractText(await res.json());
+    const { text, handoff } = splitHandoff(extractText(await res.json()));
     if (!text) return NextResponse.json({ error: "ai_empty" }, { status: 502 });
-    return NextResponse.json({ text: text.slice(0, 900) });
+    if (handoff || !confident) void logUnanswered(question, lang, handoff);
+    return NextResponse.json({ text: text.slice(0, 900), handoff });
   } catch {
     return NextResponse.json({ error: "ai_failed" }, { status: 502 });
   }

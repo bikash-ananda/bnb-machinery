@@ -428,14 +428,21 @@ export default function Chatbot() {
       });
       if (res.status === 503) { aiState.current = "off"; return null; }
       if (!res.ok) return null;
-      const d = (await res.json()) as { text?: string };
+      const d = (await res.json()) as { text?: string; handoff?: boolean };
       if (!d.text) return null;
+      const asked = (history[history.length - 1]?.content ?? "").slice(0, 200);
+      const waHref = `https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(d.handoff ? "Hello B & B Machinery, I need help: " + asked : "Hello B & B Machinery")}`;
       return {
         text: d.text,
-        links: [
-          { label: T(l, "Get a quote →", "कोटेसन लिनुहोस् →"), href: "/contact" },
-          { label: T(l, "💬 Ask our team", "💬 टोलीलाई सोध्नुहोस्"), href: `https://wa.me/977${company.contact.whatsapp}`, external: true },
-        ],
+        links: d.handoff
+          ? [
+              { label: T(l, "💬 Talk to our team", "💬 टोलीसँग कुरा गर्नुहोस्"), href: waHref, external: true },
+              { label: T(l, "☎ Call now", "☎ अहिले फोन गर्नुहोस्"), href: `tel:${company.contact.phoneRaw}`, external: true },
+            ]
+          : [
+              { label: T(l, "Get a quote →", "कोटेसन लिनुहोस् →"), href: "/contact" },
+              { label: T(l, "💬 Ask our team", "💬 टोलीलाई सोध्नुहोस्"), href: waHref, external: true },
+            ],
         chips: l === "ne" ? ["मूल्य/कोटेसन", "स्पेयर पार्ट्स", "सम्पर्क", "ठेगाना"] : ["Get a quote", "Spare parts", "Contact", "Location"],
       };
     } catch {
