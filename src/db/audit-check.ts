@@ -32,6 +32,15 @@ async function main() {
   const stock = await q(sql`select count(*) as c from stock_balances b where b.on_hand <> (select coalesce(sum(m.qty),0) from stock_movements m where m.product_id = b.product_id and m.location_id = b.location_id)`);
   checks.push(["Stock balances = sum of stock movements", Number(stock.c) === 0, `${stock.c} mismatches`]);
 
+  const apBills = await q(sql`select coalesce(sum(total_paisa),0) as t from purchase_bills`);
+  const apPaid = await q(sql`select coalesce(sum(amount_paisa),0) as t from supplier_payments where upper(method) <> 'CREDIT'`);
+  const apExpected = BigInt(String(apBills.t).split(".")[0]) - BigInt(String(apPaid.t).split(".")[0]);
+  checks.push(["Payables in ledger = bills - supplier payments", bal(tbAll, "2010", "cr") === apExpected, `Ledger ${rs(bal(tbAll, "2010", "cr"))}`]);
+  const val = await q(sql`select coalesce(sum(round(b.on_hand * p.cost_paisa)),0) as t from stock_balances b join products p on p.id = b.product_id where p.cost_paisa is not null`);
+  const valuation = BigInt(String(val.t).split(".")[0]);
+  const invLedger = bal(tbAll, "1200", "dr");
+  const diff = valuation > invLedger ? valuation - invLedger : invLedger - valuation;
+  checks.push(["Inventory in ledger = stock quantity x average cost (tolerance Rs 5)", diff <= 500n, `Ledger ${rs(invLedger)} / Stock valuation ${rs(valuation)}`]);
   const gap = await q(sql`select count(*) as n, coalesce(max(seq_no),0) as mx from invoices where fiscal_year = ${fy}`);
   checks.push(["Invoice numbers are gapless", Number(gap.n) === Number(gap.mx), `${gap.n} invoices, last no. ${gap.mx}`]);
 
@@ -44,6 +53,11 @@ async function main() {
   const sr = await rep.salesRegister(fy);
   writeFileSync(`exports/vat-sales-register-${tag}.csv`, csv([["Invoice No", "Date (BS)", "Buyer", "PAN", "Total", "Exempt", "Zero rated", "Taxable value", "VAT"], ...sr.map((r) => [r.invoiceNo, r.bsDate, r.buyer, r.pan, r.total, r.exempt, r.zero, r.taxable, r.vat])]));
   console.log(`\nWrote exports/trial-balance-${tag}.csv and exports/vat-sales-register-${tag}.csv`);
+  const pr = await rep.purchaseRegister(fy);
+  writeFileSync(`exports/purchase-register-${tag}.csv`, csv([["Bill No", "Date (BS)", "Supplier", "PAN", "Supplier Invoice", "Net", "VAT", "Total", "Non-taxable"], ...pr.map((r) => [r.billNo, r.bsDate, r.supplier, r.pan, r.supplierInvoiceNo, r.net, r.vat, r.total, r.nonTaxable])]));
+  const vr = await rep.vatReturn(fy);
+  writeFileSync(`exports/vat-return-worksheet-${tag}.csv`, csv([["Month (BS)", "Taxable sales", "Zero-rated", "Exempt", "Output VAT", "Input VAT", "Creditable %", "Creditable input VAT", "Non-creditable", "Net payable"], ...vr.map((r) => [r.month, r.taxable, r.zero, r.exempt, r.outVat, r.inVat, String(r.ratioBp / 100), r.creditable, r.nonCreditable, r.netPayable])]));
+  console.log("Also wrote purchase register and VAT return worksheet CSVs");
   process.exit(checks.every((c) => c[1]) ? 0 : 2);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

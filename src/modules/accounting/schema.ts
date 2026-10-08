@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { boolean, check, date, index, pgTable, text, uniqueIndex, uuid, bigserial } from "drizzle-orm/pg-core";
 import { createdAt, paisa } from "../../db/columns";
 import { customers } from "../customers/schema";
+import { suppliers } from "../purchasing/schema";
 
 export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -48,6 +49,7 @@ export const journalLines = pgTable(
     debitPaisa: paisa("debit_paisa").notNull().default(sql`0`),
     creditPaisa: paisa("credit_paisa").notNull().default(sql`0`),
     customerId: uuid("customer_id").references(() => customers.id),
+    supplierId: uuid("supplier_id").references(() => suppliers.id),
     memo: text("memo"),
   },
   (t) => [

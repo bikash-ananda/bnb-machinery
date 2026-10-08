@@ -5,6 +5,7 @@ async function main() {
   const { db } = await import("./client");
   const s = await import("./schema");
   const inv = await import("../modules/inventory/service");
+  const adj = await import("../modules/inventory/adjust");
   const sales = await import("../modules/sales/orders");
   const { formatNPR } = await import("../lib/money");
   const { eq } = await import("drizzle-orm");
@@ -12,7 +13,7 @@ async function main() {
   const [p] = await db.select().from(s.products).where(eq(s.products.slug, "corn-sheller"));
   if (!p) throw new Error("Run pnpm db:seed first");
   await db.update(s.products).set({ pricePaisa: 4500000n, costPaisa: 3200000n, trackStock: true }).where(eq(s.products.id, p.id));
-  await db.transaction((tx) => inv.postMovement(tx, { productId: p.id, qty: 10, type: "PURCHASE", note: "smoke test" }));
+  await db.transaction((tx) => adj.adjustStock(tx, { productId: p.id, qty: 10, reason: "OPENING", unitCostPaisa: 3200000n, note: "smoke test", createdBy: "smoke" }));
   const avail = (label: string) => db.transaction(async (tx) => console.log(label, (await inv.getAvailability(tx, [p.id])).get(p.id)));
 
   await avail("available after purchase (expect 10):");

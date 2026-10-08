@@ -12,7 +12,7 @@ export const ACC = {
   AP: "2010", OUTPUT_VAT: "2100", SALES_STD: "4010", SALES_EXEMPT: "4020", SALES_ZERO: "4030", COGS: "5010",
 } as const;
 
-type Line = { code: string; debit?: bigint; credit?: bigint; customerId?: string | null; memo?: string };
+type Line = { code: string; debit?: bigint; credit?: bigint; customerId?: string | null; supplierId?: string | null; memo?: string };
 
 /** Every posting goes through here: balanced, numbered gaplessly, idempotent per source, immutable afterwards. */
 export async function postJournal(
@@ -48,7 +48,7 @@ export async function postJournal(
 
   await tx.insert(journalLines).values(lines.map((l) => ({
     entryId: e.id, accountId: byCode.get(l.code)!, debitPaisa: l.debit ?? 0n, creditPaisa: l.credit ?? 0n,
-    customerId: l.customerId ?? null, memo: l.memo ?? null,
+    customerId: l.customerId ?? null, supplierId: l.supplierId ?? null, memo: l.memo ?? null,
   })));
   return e.id;
 }
@@ -85,7 +85,7 @@ export async function postInvoiceCogs(tx: Tx, invoiceId: string, createdBy?: str
   });
 }
 
-const PAY_ACCOUNT: Record<string, string> = { CASH: ACC.CASH, BANK: ACC.BANK, CARD: ACC.BANK, QR: ACC.BANK, ESEWA: ACC.WALLET, KHALTI: ACC.WALLET };
+export const PAY_ACCOUNT: Record<string, string> = { CASH: ACC.CASH, BANK: ACC.BANK, CARD: ACC.BANK, QR: ACC.BANK, ESEWA: ACC.WALLET, KHALTI: ACC.WALLET };
 
 /** Dr Cash/Bank/Wallet / Cr Receivable. Credit sales (method CREDIT) post nothing. */
 export async function postPayment(tx: Tx, paymentId: string, createdBy?: string) {
