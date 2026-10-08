@@ -1,3 +1,4 @@
+export {};
 async function main() {
   try { process.loadEnvFile(".env.local"); } catch {}
   const [target, cat] = process.argv.slice(2);
@@ -20,3 +21,4 @@ async function main() {
   process.exit(0);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
+

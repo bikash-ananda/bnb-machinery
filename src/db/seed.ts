@@ -1,3 +1,4 @@
+export {};
 async function main() {
   try { process.loadEnvFile(".env.local"); } catch {}
   const { db } = await import("./client");
@@ -32,3 +33,4 @@ async function main() {
   process.exit(0);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
+

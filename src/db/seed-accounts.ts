@@ -1,3 +1,4 @@
+export {};
 const chart: [string, string, string, string][] = [
   ["1010", "Cash in Hand", "ASSET", "Cash and Cash Equivalents"],
   ["1020", "Bank Account - Operating", "ASSET", "Cash and Cash Equivalents"],
@@ -49,3 +50,4 @@ async function main() {
   process.exit(0);
 }
 main().catch((e) => { console.error(e); process.exit(1); });
+
