@@ -12,9 +12,15 @@ function fromStatic(p: Product): ShopProduct {
   const img = productImage(p.id, p.image);
   return {
     id: p.id, slug: p.id, name: p.name, brand: p.brand, category: p.category,
-    image: img, images: [img], description: p.description, specs: [],
-    price: extra.price ?? null, mrp: extra.mrp ?? null,
+    image: img, images: [img], description: p.description, model: p.model,
+    specs: p.specs ?? [],
+    price: p.marketReference ? null : p.price ?? extra.price ?? null,
+    marketPrice: p.marketReference ? p.price ?? null : null,
+    mrp: p.marketReference ? null : p.mrp ?? extra.mrp ?? null,
     availability: "ask", stockQty: null, featured: p.featured,
+    sourceUrl: p.sourceUrl, manufacturerUrl: p.manufacturerUrl, sourceName: p.sourceName,
+    imageCredit: p.imageCredit, priceCheckedOn: p.priceCheckedOn, priceNote: p.priceNote,
+    marketReference: p.marketReference,
   };
 }
 

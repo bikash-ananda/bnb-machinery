@@ -1,3 +1,5 @@
+import { marketCatalog } from "./market-catalog";
+
 export type Product = {
   id: string;
   name: string;
@@ -7,9 +9,20 @@ export type Product = {
   description: string;
   featured?: boolean;
   href?: string;
+  model?: string;
+  specs?: { name: string; value: string }[];
+  price?: number;
+  mrp?: number;
+  sourceUrl?: string;
+  manufacturerUrl?: string;
+  sourceName?: string;
+  imageCredit?: string;
+  priceCheckedOn?: string;
+  priceNote?: string;
+  marketReference?: boolean;
 };
 
-export const products: Product[] = [
+const localProducts: Product[] = [
   {
     id: "corn-sheller",
     name: "Corn Sheller",
@@ -87,6 +100,8 @@ export const products: Product[] = [
     featured: true,
   },
 ];
+
+export const products: Product[] = [...localProducts, ...marketCatalog];
 
 export const productCategories = [
   "Agricultural Machinery",

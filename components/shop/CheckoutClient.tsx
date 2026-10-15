@@ -8,15 +8,20 @@ import { cartTotal, clearCart, unpricedCount, useShop } from "@/lib/shop/store";
 import { useTr } from "@/lib/shop/tr";
 import { npr } from "@/lib/shop/types";
 
-type Done = { orderNo: string; subtotal: number; total: number; unpriced: number; lines: { name: string; qty: number; price: number | null }[]; saved: boolean; paymentProvider?: PaymentProvider | null; paymentQr?: { svg: string; provider: PaymentProvider; amount: number; payee: string } | null };
+type Done = { orderNo: string; subtotal: number; total: number; unpriced: number; lines: { name: string; qty: number; price: number | null }[]; saved: boolean; paymentProvider?: PaymentProvider | null };
 type Pay = "cod" | "shop" | "digital";
 type PaymentProvider = "adbl" | "nabil" | "esewa";
 const PAY_EN: Record<Pay, string> = { cod: "Cash on delivery", shop: "Pay at the shop", digital: "Bank or eSewa QR" };
 const PAY_NE: Record<Pay, string> = { cod: "डेलिभरीमा नगद", shop: "पसलमा तिर्ने", digital: "बैंक वा eSewa QR" };
 const QR_METHODS: Record<PaymentProvider, { label: string; payee: string; detail: string }> = {
-  adbl: { label: "ADBL Bank", payee: "B AND B MACHINARY SUPPLIERS", detail: "Business account ····0016" },
-  nabil: { label: "Nabil Bank", payee: "Bikash Bhattarai", detail: "Savings account ····1460" },
-  esewa: { label: "eSewa", payee: "Bikash Bhattarai", detail: "eSewa ID ····8600" },
+  adbl: { label: "ADBL Bank", payee: "B AND B MACHINARY SUPPLIERS", detail: "Scan the B&B merchant QR" },
+  nabil: { label: "Nabil Bank", payee: "Bikash Bhattarai", detail: "Scan the B&B merchant QR" },
+  esewa: { label: "eSewa", payee: "Bikash Bhattarai", detail: "Scan the B&B merchant QR" },
+};
+const QR_IMAGES: Record<PaymentProvider, string> = {
+  adbl: "/images/payments/adbl-bank.jpg",
+  nabil: "/images/payments/nabil-bank.jpg",
+  esewa: "/images/payments/esewa.jpg",
 };
 
 export default function CheckoutClient() {
@@ -57,31 +62,34 @@ export default function CheckoutClient() {
 
   if (done && custom) {
     const lines = done.lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - " + npr(l.price * l.qty) : " - price on request"}`).join("\n");
-    const qr = done.paymentQr;
+    const provider = done.paymentProvider ?? custom.paymentProvider;
     const payable = done.total ?? done.subtotal;
     const text = `New order ${done.orderNo}\nName: ${custom.name}\nPhone: ${custom.phone}\n${custom.delivery === "pickup" ? "Pickup from shop" : `Deliver to: ${custom.address}, ${custom.district}`}\nPayment: ${custom.payment}${custom.paymentProvider ? ` (${QR_METHODS[custom.paymentProvider].label})` : ""}\n\nItems:\n${lines}\n\nTotal: ${payable > 0 ? npr(payable) : "-"}${done.unpriced ? ` (+${done.unpriced} item(s) price on request)` : ""}${custom.note ? "\nNote: " + custom.note : ""}`;
-    const qrUrl = qr ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(qr.svg)}` : "";
     return (
       <div className="mx-auto max-w-2xl space-y-5 rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-lg">
         <p className="text-5xl">✅</p>
-        <h2 className="mt-3 text-3xl font-black">{tr("Order received", "अर्डर प्राप्त भयो")}</h2>
-        <p className="mt-2 text-slate-600">{tr("Your order number is", "तपाईंको अर्डर नम्बर")}</p>
+        <h2 className="mt-3 text-3xl font-black">{tr(done.saved ? "Order received" : "Order details ready", done.saved ? "अर्डर प्राप्त भयो" : "अर्डर विवरण तयार भयो")}</h2>
+        <p className="mt-2 text-slate-600">{tr(done.saved ? "Your order number is" : "Your reference number is", done.saved ? "तपाईंको अर्डर नम्बर" : "तपाईंको सन्दर्भ नम्बर")}</p>
         <p className="mt-1 text-2xl font-black tracking-wider text-amber-600">{done.orderNo}</p>
-        {qr ? (
+        {provider && done.unpriced === 0 && done.saved ? (
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">
             <div className="text-center">
-              <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">{tr(`Scan with ${QR_METHODS[qr.provider].label}`, `${QR_METHODS[qr.provider].label} बाट स्क्यान गर्नुहोस्`)}</p>
-              <p className="mt-1 text-3xl font-black text-slate-950">{npr(qr.amount)}</p>
-              <p className="text-sm text-slate-600">{qr.payee} · {QR_METHODS[qr.provider].detail}</p>
-              <img src={qrUrl} alt={`${QR_METHODS[qr.provider].label} payment QR for ${npr(qr.amount)}`} width={256} height={256} className="mx-auto mt-4 rounded-xl border border-slate-200 bg-white p-2" />
-              <a href={qrUrl} download={`bnb-${done.orderNo}-${qr.provider}-qr.svg`} className="mt-3 inline-block rounded-lg border border-emerald-700 px-4 py-2 text-sm font-bold text-emerald-800 hover:bg-white">{tr("Download QR", "QR डाउनलोड गर्नुहोस्")}</a>
+              <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">{tr(`B&B ${QR_METHODS[provider].label} payment details`, `B&B ${QR_METHODS[provider].label} भुक्तानी विवरण`)}</p>
+              <p className="mt-1 text-3xl font-black text-slate-950">{npr(payable)}</p>
+              <p className="text-sm text-slate-600">{QR_METHODS[provider].payee} · {QR_METHODS[provider].detail}</p>
+              {/* This user-provided merchant QR is static. The amount is shown beside it and must be entered in the payment app. */}
+              <img src={QR_IMAGES[provider]} alt={`${QR_METHODS[provider].label} static merchant QR for B&B Machinery`} width={256} height={256} className="mx-auto mt-4 max-h-72 rounded-xl border border-slate-200 bg-white object-contain p-2" />
             </div>
-            <p className="mt-4 text-xs leading-5 text-slate-700">{tr("This QR contains the payee details, exact NPR order amount and order number. Check the payee and amount in your payment app before confirming. If the app does not read the amount, enter the amount shown above. Delivery charges, if any, are confirmed separately. Your order stays unpaid until our team verifies the transfer.", "यो QR मा भुक्तानी पाउने विवरण, ठ्याक्कै NPR रकम र अर्डर नम्बर छ। भुक्तानी पुष्टि गर्नुअघि एपमा पाउने व्यक्ति र रकम जाँच्नुहोस्। एपले रकम नपढे माथि देखिएको रकम आफैँ राख्नुहोस्। डेलिभरी शुल्क भए छुट्टै पुष्टि हुन्छ। टोलीले कारोबार जाँच नगरेसम्म अर्डर भुक्तानी नभएको अवस्थामा रहन्छ।")}</p>
+            <p className="mt-4 text-xs leading-5 text-slate-700">{tr("This is a static merchant QR; it does not encode the bill amount or order number. Enter the confirmed bill amount manually in your payment app, check the payee name and amount, and keep your payment receipt. Delivery charges are confirmed separately. Your order stays unpaid until our team verifies the transfer.", "यो स्थिर व्यापारी QR हो; यसमा बिलको रकम वा अर्डर नम्बर समावेश हुँदैन। भुक्तानी एपमा पुष्टि गरिएको बिल रकम आफैँ राख्नुहोस्, पाउने व्यक्तिको नाम र रकम जाँच्नुहोस्, र भुक्तानी रसिद सुरक्षित राख्नुहोस्। डेलिभरी शुल्क छुट्टै पुष्टि हुन्छ। टोलीले कारोबार जाँच नगरेसम्म अर्डर भुक्तानी नभएको अवस्थामा रहन्छ।")}</p>
           </section>
-        ) : custom.paymentProvider && done.unpriced > 0 ? (
-          <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">{tr("Some items need a price confirmation. Our team will confirm your total and send a payment QR on WhatsApp.", "केही वस्तुको मूल्य पुष्टि हुन बाँकी छ। हाम्रो टोलीले जम्मा रकम पुष्टि गरी WhatsApp मा भुक्तानी QR पठाउनेछ।")}</p>
-        ) : (
+        ) : provider && done.unpriced > 0 ? (
+          <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{tr("This order contains items awaiting B&B pricing or stock confirmation. Any online market rates shown are references only. Please do not transfer money yet. Our team will confirm your final bill and payment instructions first; the attached merchant QR is static and cannot fill the amount automatically.", "यस अर्डरका वस्तुको B&B मूल्य वा स्टक पुष्टि हुन बाँकी छ। देखाइएका अनलाइन बजारका मूल्य सन्दर्भ मात्र हुन्। अहिले रकम नपठाउनुहोस्। हाम्रो टोलीले पहिले अन्तिम बिल र भुक्तानी निर्देशन पुष्टि गर्नेछ; संलग्न व्यापारी QR स्थिर हो र रकम आफैँ भर्दैन।")}</p>
+        ) : provider ? (
+          <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">{tr("We could not confirm that the order was saved. Please contact B&B before making a payment.", "अर्डर सुरक्षित भएको पुष्टि गर्न सकेनौँ। भुक्तानी गर्नुअघि B&B मा सम्पर्क गर्नुहोस्।")}</p>
+        ) : done.saved ? (
           <p className="mt-4 text-sm text-slate-600">{tr("Send this order on WhatsApp so our team can confirm the final price, delivery and payment with you.", "अन्तिम मूल्य, डेलिभरी र भुक्तानी पुष्टि गर्न यो अर्डर WhatsApp मा पठाउनुहोस्।")}</p>
+        ) : (
+          <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{tr("This order has not reached B&B yet. Send it through WhatsApp or call us so we can confirm stock, final price and delivery.", "यो अर्डर अझै B&B सम्म पुगेको छैन। स्टक, अन्तिम मूल्य र डेलिभरी पुष्टि गर्न WhatsApp बाट पठाउनुहोस् वा फोन गर्नुहोस्।")}</p>
         )}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <a href={`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer"
@@ -156,7 +164,7 @@ export default function CheckoutClient() {
                   </label>
                 ))}
               </div>
-              <p className="mt-3 text-xs text-slate-600">{tr("The QR is created after your order using the server-priced amount. Delivery charges are confirmed separately.", "अर्डरपछि सर्भरले निर्धारण गरेको रकमबाट QR बन्छ। डेलिभरी शुल्क छुट्टै पुष्टि हुन्छ।")}</p>
+              <p className="mt-3 text-xs leading-5 text-slate-600">{tr("The displayed QR is a static merchant QR. It does not contain the amount; your final amount must be confirmed by B&B and entered manually in the payment app. Orders with reference or unconfirmed prices must wait for our team before payment.", "देखाइएको QR स्थिर व्यापारी QR हो। यसमा रकम हुँदैन; अन्तिम रकम B&B बाट पुष्टि भएपछि भुक्तानी एपमा आफैँ राख्नुहोस्। सन्दर्भ वा अपुष्ट मूल्य भएका अर्डरमा हाम्रो टोलीको पुष्टि पर्खनुहोस्।")}</p>
             </div>
           ) : <p className="mt-2 text-xs text-slate-500">{tr("Payment is collected by our team after the order is confirmed.", "अर्डर पुष्टि भएपछि हाम्रो टोलीले भुक्तानी लिन्छ।")}</p>}
         </fieldset>

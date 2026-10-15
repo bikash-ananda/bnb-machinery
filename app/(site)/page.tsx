@@ -115,7 +115,7 @@ export default async function HomePage() {
                       <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{p.brand}</p>
                       <h3 className="mt-1 line-clamp-2 font-bold text-slate-950 group-hover:text-[var(--brand-primary)]">{p.name}</h3>
                       <p className="mt-2 text-sm font-bold text-[var(--brand-primary)]">
-                        {p.price !== null ? npr(p.price) : <L en="Price on request" ne="मूल्य सोध्नुहोस्" />}
+                        {p.price !== null ? npr(p.price) : p.marketPrice != null ? <>{npr(p.marketPrice)} <span className="block text-[10px] font-bold uppercase text-amber-800"><L en="Market reference" ne="बजार सन्दर्भ" /></span></> : <L en="Price on request" ne="मूल्य सोध्नुहोस्" />}
                       </p>
                     </div>
                   </Link>

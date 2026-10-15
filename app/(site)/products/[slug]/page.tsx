@@ -38,7 +38,7 @@ export default async function ProductPage({ params }: Props) {
     "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description,
     image: p.images, brand: { "@type": "Brand", name: p.brand },
     ...(rv.count > 0 && { aggregateRating: { "@type": "AggregateRating", ratingValue: Number(rv.avg.toFixed(1)), reviewCount: rv.count } }),
-    ...(p.price !== null && {
+    ...(p.price !== null && !p.marketReference && {
       offers: {
         "@type": "Offer", priceCurrency: "NPR", price: p.price,
         availability: p.availability === "out" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
@@ -79,6 +79,14 @@ export default async function ProductPage({ params }: Props) {
                   {off > 0 && <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">{off}% OFF</span>}
                 </div>
               ) : <span className="text-2xl font-black text-slate-700"><L en="Price on request" ne="मूल्य सोधपुछमा" /></span>}
+              {p.marketPrice != null && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-wide text-amber-900"><L en="Nepal online market reference" ne="नेपालको अनलाइन बजार सन्दर्भ मूल्य" /></p>
+                  <p className="mt-1 text-2xl font-black text-slate-950">{npr(p.marketPrice)}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-700">{p.priceNote || <L en="This is an external reference price. B&B confirms its own selling price and availability before accepting an order." ne="यो बाह्य सन्दर्भ मूल्य हो। अर्डर स्वीकार्नुअघि B&B ले आफ्नो बिक्री मूल्य र उपलब्धता पुष्टि गर्छ।" />}</p>
+                  {p.priceCheckedOn && <p className="mt-1 text-[11px] text-slate-500"><L en="Checked" ne="जाँच गरिएको" />: {p.priceCheckedOn}</p>}
+                </div>
+              )}
               {p.price !== null && mrp && mrp > p.price && (
                 <p className="mt-1 text-sm font-bold text-emerald-700"><L en="You save" ne="तपाईंले बचाउनुहुन्छ" /> {npr(mrp - p.price)}</p>
               )}
@@ -96,6 +104,12 @@ export default async function ProductPage({ params }: Props) {
               <Link href={`/contact?item=${encodeURIComponent(p.name)}`} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white"><L en="Get quotation" ne="कोटेसन लिनुहोस्" /></Link>
               <CompareButton id={p.id} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white" />
             </div>
+            {(p.manufacturerUrl || p.sourceUrl) && (
+              <div className="mt-5 flex flex-wrap gap-3 text-sm">
+                {p.manufacturerUrl && <a href={p.manufacturerUrl} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-bold text-slate-800 hover:border-amber-400"><L en="Manufacturer specifications ↗" ne="उत्पादकको विवरण ↗" /></a>}
+                {p.sourceUrl && <a href={p.sourceUrl} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-bold text-slate-700 hover:border-amber-400"><L en="View Nepal price source ↗" ne="नेपालको मूल्य स्रोत हेर्नुहोस् ↗" /></a>}
+              </div>
+            )}
           </div>
         </div>
 
@@ -143,7 +157,7 @@ export default async function ProductPage({ params }: Props) {
               {related.map((r) => (
                 <Link key={r.id} href={`/products/${r.slug}`} data-tilt="" className="overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:border-amber-400 hover:shadow-lg">
                   <SafeImage src={r.image} alt={r.name} contain className="aspect-square w-full bg-slate-100 p-4" />
-                  <div className="p-4"><p className="font-extrabold">{r.name}</p><p className="mt-1 text-sm font-bold text-[var(--brand-primary)]">{r.price !== null ? npr(r.price) : <L en="Price on request" ne="मूल्य सोधपुछमा" />}</p></div>
+                  <div className="p-4"><p className="font-extrabold">{r.name}</p><p className="mt-1 text-sm font-bold text-[var(--brand-primary)]">{r.price !== null ? npr(r.price) : r.marketPrice != null ? npr(r.marketPrice) : <L en="Price on request" ne="मूल्य सोधपुछमा" />}</p>{r.marketReference && <p className="mt-1 text-[10px] font-bold uppercase text-amber-800"><L en="Market reference" ne="बजार सन्दर्भ" /></p>}</div>
                 </Link>
               ))}
             </div>

@@ -7,7 +7,7 @@ import { notifyNewOrder } from "@/lib/server/notify";
 import { dbRequest, hasSupabaseConfig } from "@/lib/server/supabase";
 import { createOrder } from "@/src/modules/sales/orders";
 import { InsufficientStockError } from "@/src/modules/inventory/service";
-import { createPaymentQr, isPaymentProvider, paymentProviderName } from "@/lib/server/payment-qr";
+import { isPaymentProvider, paymentProviderName } from "@/lib/server/payment-qr";
 
 export const runtime = "nodejs";
 
@@ -98,16 +98,13 @@ export async function POST(request: Request) {
 
   const summary = lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - Rs " + (l.price * l.qty).toLocaleString("en-IN") : " - price on request"}`).join("\n");
   const paymentLabel = paymentProvider ? `${payment} (${paymentProviderName(paymentProvider)})` : payment;
-  if (!process.env.DATABASE_URL) void notifyNewOrder(
+  let emailNotified = false;
+  if (!saved) emailNotified = await notifyNewOrder(
     `New order ${orderNo} - ${name}`,
     `Order ${orderNo}\nName: ${name}\nPhone: ${phone}\n${email ? "Email: " + email + "\n" : ""}${delivery === "pickup" ? "Pickup from shop" : "Deliver to: " + address + ", " + district}\nPayment: ${paymentLabel}\n\n${summary}\n\nSubtotal: Rs ${subtotal.toLocaleString("en-IN")}\nOrder total: Rs ${total.toLocaleString("en-IN")}${unpriced ? " (+" + unpriced + " item(s) price on request)" : ""}${note ? "\nNote: " + note : ""}`,
   );
 
-  let paymentQr = null;
-  if (saved && paymentProvider && unpriced === 0 && total > 0) {
-    try { paymentQr = createPaymentQr(paymentProvider, total, orderNo); }
-    catch (e) { console.error("payment QR creation failed", e); }
-  }
+  saved ||= emailNotified;
 
-  return NextResponse.json({ orderNo, subtotal, total, unpriced, lines, saved, paymentProvider, paymentQr });
+  return NextResponse.json({ orderNo, subtotal, total, unpriced, lines, saved, paymentProvider, emailNotified });
 }

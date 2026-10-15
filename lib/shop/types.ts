@@ -13,10 +13,18 @@ export type ShopProduct = {
   model?: string;
   specs: { name: string; value: string }[];
   price: number | null;
+  marketPrice?: number | null;
   mrp?: number | null;
   availability: Availability;
   stockQty: number | null;
   featured?: boolean;
+  sourceUrl?: string;
+  manufacturerUrl?: string;
+  sourceName?: string;
+  imageCredit?: string;
+  priceCheckedOn?: string;
+  priceNote?: string;
+  marketReference?: boolean;
 };
 
 export const npr = (n: number) => "Rs " + n.toLocaleString("en-IN");
