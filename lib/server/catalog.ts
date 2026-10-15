@@ -17,7 +17,7 @@ function fromStatic(p: Product): ShopProduct {
     price: p.marketReference ? null : p.price ?? extra.price ?? null,
     marketPrice: p.marketReference ? p.price ?? null : null,
     mrp: p.marketReference ? null : p.mrp ?? extra.mrp ?? null,
-    availability: "ask", stockQty: null, featured: p.featured,
+    availability: p.catalogOnly || p.marketReference ? "out" : "ask", stockQty: p.catalogOnly || p.marketReference ? 0 : null, featured: p.featured,
     sourceUrl: p.sourceUrl, manufacturerUrl: p.manufacturerUrl, sourceName: p.sourceName,
     imageCredit: p.imageCredit, priceCheckedOn: p.priceCheckedOn, priceNote: p.priceNote,
     marketReference: p.marketReference,

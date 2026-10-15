@@ -34,7 +34,7 @@ export default function FloatingContact() {
             <a href={`https://wa.me/977${company.contact.whatsapp}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" title="WhatsApp" className={`${base} !border-emerald-600 !bg-emerald-600 !text-white`}><MessageCircle size={18} /></a>
             <a href={`tel:${company.contact.phoneRaw}`} aria-label={tr("Call", "फोन")} title={tr("Call", "फोन")} className={base}><Phone size={18} /></a>
             <a href={`mailto:${company.contact.email}`} aria-label="Email" title="Email" className={base}><Mail size={18} /></a>
-            <Link href="/contact" aria-label={tr("Request a quote", "मूल्य सोध्नुहोस्")} title={tr("Request a quote", "मूल्य सोध्नुहोस्")} className={base}><FileText size={18} /></Link>
+            <Link href="/get-a-quote" aria-label={tr("Request a quote from confirmed stock", "पुष्टि भएको स्टकबाट मूल्य सोध्नुहोस्")} title={tr("Request a quote", "मूल्य सोध्नुहोस्")} className={base}><FileText size={18} /></Link>
             <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label={tr("Back to top", "माथि जानुहोस्")} title={tr("Back to top", "माथि जानुहोस्")} className={base}><ArrowUp size={18} /></button>
           </>
         )}

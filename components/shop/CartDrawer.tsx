@@ -70,11 +70,11 @@ export default function CartDrawer() {
             {s.cart.length > 0 && (
               <div className="space-y-3 border-t border-slate-200 p-5">
                 <div className="flex items-center justify-between text-lg font-black">
-                  <span>{tr("Subtotal", "जम्मा")}</span><span>{total > 0 ? npr(total) : "—"}</span>
+                  <span>{unpriced > 0 ? tr("Known item total", "मूल्य भएका वस्तुको जम्मा") : tr("Bill total", "बिल जम्मा")}</span><span>{total > 0 || unpriced === 0 ? npr(total) : tr("Pending", "पुष्टि हुन बाँकी")}</span>
                 </div>
-                {unpriced > 0 && <p className="text-xs text-slate-600">{tr(`${unpriced} item(s) are price-on-request. Our team confirms the final price before you pay.`, `${unpriced} वस्तुको मूल्य सोधपुछमा छ। तिर्नुअघि हाम्रो टोलीले अन्तिम मूल्य पुष्टि गर्नेछ।`)}</p>}
+                {unpriced > 0 && <p className="text-xs text-slate-600">{tr(`${unpriced} item(s) need a confirmed price. The amount above covers priced items only; the final bill is confirmed before payment.`, `${unpriced} वस्तुको मूल्य पुष्टि हुन बाँकी छ। माथिको रकम मूल्य भएका वस्तुका लागि मात्र हो; भुक्तानीअघि अन्तिम बिल पुष्टि गरिन्छ।`)}</p>}
                 <Link href="/checkout" onClick={() => setDrawer(false)} className="block rounded-xl bg-emerald-600 px-5 py-4 text-center font-extrabold text-white hover:bg-emerald-700">
-                  {unpriced > 0 ? tr("Request quote / Checkout →", "कोटेसन माग्नुहोस् / चेकआउट →") : tr("Checkout →", "चेकआउट →")}
+                  {tr("Checkout →", "चेकआउट →")}
                 </Link>
                 <button type="button" onClick={clearCart} className="w-full text-sm font-semibold text-slate-500 hover:text-red-600">{tr("Clear cart", "कार्ट खाली गर्नुहोस्")}</button>
               </div>

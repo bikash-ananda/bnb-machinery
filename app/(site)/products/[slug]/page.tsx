@@ -101,7 +101,7 @@ export default async function ProductPage({ params }: Props) {
             <div className="mt-5 flex flex-wrap gap-3">
               <a href={`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(ask)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-emerald-600 px-5 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"><L en="Ask on WhatsApp" ne="WhatsApp मा सोध्नुहोस्" /></a>
               <a href={`tel:${company.contact.phoneRaw}`} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white"><L en="Call us" ne="फोन गर्नुहोस्" /></a>
-              <Link href={`/contact?item=${encodeURIComponent(p.name)}`} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white"><L en="Get quotation" ne="कोटेसन लिनुहोस्" /></Link>
+              <Link href={`/get-a-quote?item=${encodeURIComponent(p.id)}`} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white"><L en="Get quotation" ne="कोटेसन लिनुहोस्" /></Link>
               <CompareButton id={p.id} className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold hover:bg-white" />
             </div>
             {(p.manufacturerUrl || p.sourceUrl) && (

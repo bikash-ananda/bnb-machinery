@@ -44,7 +44,7 @@ export default async function HomePage() {
             <Link href="/products" className="rounded-lg bg-[var(--brand-accent)] px-6 py-3.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400">
               <L en="Shop now" ne="किनमेल गर्नुहोस्" />
             </Link>
-            <Link href="/contact" className="rounded-lg border border-current/40 px-6 py-3.5 text-sm font-bold text-[color:var(--hero-fg,#fff)] transition-colors hover:bg-white/10">
+            <Link href="/get-a-quote" className="rounded-lg border border-current/40 px-6 py-3.5 text-sm font-bold text-[color:var(--hero-fg,#fff)] transition-colors hover:bg-white/10">
               <L en="Request a quote" ne="मूल्य सोध्नुहोस्" />
             </Link>
           </div>
@@ -134,7 +134,7 @@ export default async function HomePage() {
             <p className="mt-2 max-w-xl text-slate-300"><L en="Send us your list. We will reply with a quotation." ne="आफ्नो सूची पठाउनुहोस्। हामी कोटेसनसहित जवाफ दिनेछौं।" /></p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/contact" className="rounded-lg bg-[var(--brand-accent)] px-6 py-3.5 text-sm font-bold text-slate-950 hover:bg-amber-400"><L en="Request a quote" ne="मूल्य सोध्नुहोस्" /></Link>
+            <Link href="/get-a-quote" className="rounded-lg bg-[var(--brand-accent)] px-6 py-3.5 text-sm font-bold text-slate-950 hover:bg-amber-400"><L en="Request a quote" ne="मूल्य सोध्नुहोस्" /></Link>
             <a href={`https://wa.me/977${company.contact.whatsapp}`} className="rounded-lg border border-white/30 px-6 py-3.5 text-sm font-bold hover:bg-white/10">WhatsApp</a>
           </div>
         </div>

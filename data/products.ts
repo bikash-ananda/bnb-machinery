@@ -1,4 +1,5 @@
 import { marketCatalog } from "./market-catalog";
+import manufacturerLibrary from "./manufacturer-library.json";
 
 export type Product = {
   id: string;
@@ -20,7 +21,54 @@ export type Product = {
   priceCheckedOn?: string;
   priceNote?: string;
   marketReference?: boolean;
+  catalogOnly?: boolean;
 };
+
+type ManufacturerLibraryRecord = {
+  id: string;
+  manufacturer: string;
+  model: string;
+  name: string;
+  description: string;
+  category: string;
+  imageUrl: string;
+  sourceUrl: string;
+  manufacturerUrl: string;
+  sourceName: string;
+  specifications: string[];
+};
+
+const manufacturerProducts: Product[] = (manufacturerLibrary.items as ManufacturerLibraryRecord[]).map((item) => {
+  const priorReference = marketCatalog.find((product) => product.id === item.id);
+  return {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    brand: item.manufacturer,
+    model: item.model,
+    image: item.imageUrl,
+    description: item.description,
+    specs: item.specifications.map((specification) => {
+      const separator = specification.indexOf(":");
+      return separator > 0
+        ? { name: specification.slice(0, separator).trim(), value: specification.slice(separator + 1).trim() }
+        : { name: "Manufacturer details", value: specification };
+    }),
+    price: priorReference?.price,
+    mrp: priorReference?.mrp,
+    sourceUrl: item.sourceUrl,
+    manufacturerUrl: item.manufacturerUrl,
+    sourceName: priorReference?.sourceName ?? item.sourceName,
+    imageCredit: `${item.manufacturer} official product catalog`,
+    priceCheckedOn: priorReference?.priceCheckedOn,
+    priceNote: priorReference?.priceNote,
+    marketReference: true,
+    catalogOnly: true,
+  };
+});
+
+const manufacturerProductIds = new Set(manufacturerProducts.map((product) => product.id));
+const remainingMarketCatalog = marketCatalog.filter((product) => !manufacturerProductIds.has(product.id));
 
 const localProducts: Product[] = [
   {
@@ -101,7 +149,7 @@ const localProducts: Product[] = [
   },
 ];
 
-export const products: Product[] = [...localProducts, ...marketCatalog];
+export const products: Product[] = [...localProducts, ...remainingMarketCatalog, ...manufacturerProducts];
 
 export const productCategories = [
   "Agricultural Machinery",

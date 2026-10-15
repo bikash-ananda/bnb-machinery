@@ -18,8 +18,6 @@ const navigation: { key: MessageKey; href: string }[] = [
   { key: "brands", href: "/brands" },
   { key: "services", href: "/services" },
   { key: "about", href: "/about" },
-  { key: "gallery", href: "/gallery" },
-  { key: "contact", href: "/contact" },
 ];
 
 const link =
@@ -81,7 +79,7 @@ export default function Header() {
               <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--brand-accent)] px-1 text-[11px] font-black text-slate-950">{count}</span>
             )}
           </button>
-          <Link href="/contact" className="hidden rounded-lg bg-[var(--brand-accent)] px-5 py-3 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400 lg:block">
+          <Link href="/get-a-quote" className="hidden rounded-lg bg-[var(--brand-accent)] px-5 py-3 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400 lg:block">
             {t("getQuote")}
           </Link>
           <button
@@ -121,7 +119,7 @@ export default function Header() {
             </div>
             <div className="mt-3 flex items-center gap-3">
               <LanguageSwitcher />
-              <Link href="/contact" onClick={() => setMobileOpen(false)} className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-[var(--brand-accent)] px-5 text-sm font-bold text-slate-950">
+              <Link href="/get-a-quote" onClick={() => setMobileOpen(false)} className="flex min-h-12 flex-1 items-center justify-center rounded-lg bg-[var(--brand-accent)] px-5 text-sm font-bold text-slate-950">
                 {t("getQuote")}
               </Link>
             </div>

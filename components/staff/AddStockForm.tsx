@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { LocalizedText, useLanguage } from "@/components/i18n/LanguageProvider";
+import StockLibraryPicker from "@/components/staff/StockLibraryPicker";
 
 type SelectedImage = { id: string; file: File; url: string; lowQuality: boolean };
 
@@ -202,6 +203,7 @@ export default function AddStockForm() {
 
   return (
     <div className="space-y-6">
+      <StockLibraryPicker />
       <section className="rounded-2xl border border-[var(--border)] bg-white p-5 sm:p-7">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-amber-700"><LocalizedText id="stockEntry" /></p>
         <h1 className="mt-2 text-2xl font-bold text-[var(--brand-primary)] sm:text-3xl"><LocalizedText id="uploadTitle" /></h1>

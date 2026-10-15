@@ -83,7 +83,7 @@ export function searchProducts(products: Input[], query: string, limit = 8): Sea
 /** Machines / tools / spare parts, derived from the category name (no extra data needed). */
 export function productKind(category: string): Kind {
   const c = category.toLowerCase();
-  if (/part|spare|पार्ट|पुर्जा/.test(c)) return "parts";
+  if (/part|spare|bearing|बेयरिंग|पार्ट|पुर्जा/.test(c)) return "parts";
   if (/tool|औजार/.test(c)) return "tools";
   return "machines";
 }
