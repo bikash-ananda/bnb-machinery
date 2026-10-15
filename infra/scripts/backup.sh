@@ -9,6 +9,7 @@ mkdir -p "$OUT"
 docker compose -f infra/docker-compose.yml --env-file infra/.env.production exec -T postgres \
   pg_dump -U bnb -d bnb -Fc > "$OUT/db-$STAMP.dump"
 docker run --rm -v bnb_media:/data/media -v "$OUT":/out alpine tar czf "/out/media-$STAMP.tgz" -C /data media
+docker run --rm -v bnb_botdata:/data/bot -v "$OUT":/out alpine tar czf "/out/botdata-$STAMP.tgz" -C /data bot
 
 # Off-site copy: configure rclone once (`rclone config`, remote named "offsite"), then uncomment:
 # rclone copy "$OUT" offsite:bnb-backups --max-age 2d

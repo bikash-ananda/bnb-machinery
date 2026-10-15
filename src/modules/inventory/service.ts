@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Tx } from "../../db/client";
+import { enqueueAutomationEvent } from "../automation/events";
 import { stockBalances, stockLocations, stockMovements, stockReservations } from "./schema";
 
 export class InsufficientStockError extends Error {
@@ -29,10 +30,10 @@ export async function postMovement(
 ) {
   if (!Number.isFinite(m.qty) || m.qty === 0) throw new Error("Movement quantity must be a non-zero number.");
   const locationId = m.locationId ?? (await defaultLocationId(tx));
-  await tx.insert(stockMovements).values({
+  const [movement] = await tx.insert(stockMovements).values({
     productId: m.productId, locationId, qty: m.qty, type: m.type,
     refType: m.refType ?? null, refId: m.refId ?? null, note: m.note ?? null, createdBy: m.createdBy ?? null,
-  });
+  }).returning({ id: stockMovements.id });
   try {
     const updated = await tx
       .update(stockBalances)
@@ -48,6 +49,10 @@ export async function postMovement(
     if (pgCode(e) === "23514") throw new InsufficientStockError(m.productId, 0, "Stock cannot go below zero.");
     throw e;
   }
+  await enqueueAutomationEvent(tx, {
+    eventType: "STOCK_CHANGED", aggregateType: "product", aggregateId: m.productId,
+    payload: { locationId, movementId: String(movement.id), movementType: m.type }, dedupeKey: "stock-movement:" + String(movement.id),
+  });
 }
 
 /** Reserve stock for an order. Locks balance rows so two buyers cannot take the same last item. */
@@ -63,12 +68,24 @@ export async function reserveStock(tx: Tx, orderId: string, items: { productId: 
     const reserved = Number((res.rows[0] as { r: string }).r);
     const available = onHand - reserved;
     if (available < need) throw new InsufficientStockError(productId, Math.max(0, available));
-    await tx.insert(stockReservations).values({ productId, locationId: loc, orderId, qty: need });
+    const [reservation] = await tx.insert(stockReservations).values({ productId, locationId: loc, orderId, qty: need }).returning({ id: stockReservations.id });
+    await enqueueAutomationEvent(tx, {
+      eventType: "STOCK_CHANGED", aggregateType: "product", aggregateId: productId,
+      payload: { locationId: loc, reservationId: reservation.id }, dedupeKey: "stock-reservation:" + reservation.id,
+    });
   }
 }
 
 export async function releaseReservations(tx: Tx, orderId: string) {
+  const active = await tx.select({ id: stockReservations.id, productId: stockReservations.productId, locationId: stockReservations.locationId })
+    .from(stockReservations).where(and(eq(stockReservations.orderId, orderId), eq(stockReservations.status, "ACTIVE"))).for("update");
   await tx.update(stockReservations).set({ status: "RELEASED" }).where(and(eq(stockReservations.orderId, orderId), eq(stockReservations.status, "ACTIVE")));
+  for (const reservation of active) {
+    await enqueueAutomationEvent(tx, {
+      eventType: "STOCK_CHANGED", aggregateType: "product", aggregateId: reservation.productId,
+      payload: { locationId: reservation.locationId, reservationId: reservation.id }, dedupeKey: "stock-release:" + reservation.id,
+    });
+  }
 }
 
 /** Order confirmed: turn reservations into real SALE movements. */

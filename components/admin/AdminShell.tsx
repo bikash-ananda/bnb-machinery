@@ -48,23 +48,23 @@ export default function AdminShell({ user, nav, children }: { user: { name: stri
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-[#07111f] lg:block">{sidebar}</aside>
+    <div className="min-h-screen bg-[var(--surface)] text-slate-900">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-[var(--brand-primary)] lg:block">{sidebar}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button type="button" aria-label="Close menu" className="absolute inset-0 bg-slate-950/60" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 bg-[#07111f]">{sidebar}</aside>
+          <aside className="absolute inset-y-0 left-0 w-72 bg-[var(--brand-primary)]">{sidebar}</aside>
         </div>
       )}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-[var(--border)] bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
           <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Menu" className="rounded-lg border border-slate-300 p-2 lg:hidden">{open ? <X size={20} /> : <Menu size={20} />}</button>
           <div className="ml-auto flex items-center gap-3">
             <div className="text-right leading-tight">
               <p className="text-sm font-bold">{user.name}</p>
               <p className="text-xs text-slate-500">{user.roleLabel}</p>
             </div>
-            <button type="button" onClick={logout} className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold hover:bg-slate-100"><LogOut size={16} /> Sign out</button>
+            <button type="button" onClick={logout} className="flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm font-bold transition hover:border-[var(--brand-accent-strong)] hover:bg-[var(--brand-accent-soft)]"><LogOut size={16} /> Sign out</button>
           </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>

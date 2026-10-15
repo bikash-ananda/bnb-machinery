@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR?.trim() || ".next",
   output: process.env.VERCEL ? undefined : "standalone", // needed for the Docker image (infra/Dockerfile)
+  outputFileTracingIncludes: {
+    "/api/chat": ["./data/knowledge/**/*"],
+  },
   poweredByHeader: false,
   async headers() {
     return [{

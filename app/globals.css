@@ -412,17 +412,31 @@ html[data-language="ne"] .lang-ne {
 }
 /* ===== Site colour tokens (fix: these were never defined) ===== */
 :root {
-  --brand-primary: #0b1b33;
-  --brand-secondary: #16294a;
-  --brand-accent: #f59e0b;
-  --surface: #f8fafc;
-  --surface-muted: #f1f5f9;
-  --border: #e2e8f0;
-  --text-muted: #64748b;
+  color-scheme: light;
+  --brand-primary: #12243a;
+  --brand-secondary: #263f5c;
+  --brand-accent: #f2a900;
+  --brand-accent-strong: #a96000;
+  --brand-accent-soft: #fff4d6;
+  --surface: #f7f8fa;
+  --surface-muted: #edf1f5;
+  --border: #dce3ea;
+  --text-muted: #58697a;
+  --focus-ring: #1769aa;
 }
 body {
   background: #ffffff;
   color: #0f172a;
+}
+
+::selection {
+  background: var(--brand-accent-soft);
+  color: var(--brand-primary);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 72%, transparent);
+  outline-offset: 3px;
 }
 
 /* ===== Motion backgrounds (MotionBackdrop) ===== */

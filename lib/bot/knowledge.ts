@@ -7,7 +7,9 @@ import { getShopProducts } from "@/lib/server/catalog";
 import { csvToChunks } from "@/src/lib/bot/csv";
 import { buildIndex, chunkMarkdown, isConfident, search, type Chunk, type Hit, type Index } from "@/src/lib/bot/retrieval";
 
-const dir = () => path.resolve(process.env.BOT_KNOWLEDGE_DIR || path.join(process.cwd(), "data", "knowledge"));
+const dir = () => process.env.BOT_KNOWLEDGE_DIR?.trim()
+  ? path.resolve(/*turbopackIgnore: true*/ process.env.BOT_KNOWLEDGE_DIR.trim())
+  : path.join(process.cwd(), "data", "knowledge");
 
 let fileCache: { sig: string; chunks: Chunk[] } | null = null;
 let productCache: { at: number; chunks: Chunk[] } | null = null;
@@ -16,13 +18,13 @@ let indexCache: { key: string; index: Index } | null = null;
 /** Every .md / .txt / .csv file in data/knowledge becomes searchable. Edit a file and the bot sees it on the next question. */
 async function fileChunks(): Promise<Chunk[]> {
   let names: string[] = [];
-  try { names = (await fs.readdir(dir())).filter((n) => /\.(md|txt|csv)$/i.test(n)).sort(); } catch { return []; }
-  const stats = await Promise.all(names.map((n) => fs.stat(path.join(dir(), n))));
+  try { names = (await fs.readdir(/*turbopackIgnore: true*/ dir())).filter((n) => /\.(md|txt|csv)$/i.test(n)).sort(); } catch { return []; }
+  const stats = await Promise.all(names.map((n) => fs.stat(path.join(/*turbopackIgnore: true*/ dir(), n))));
   const sig = names.map((n, i) => `${n}:${stats[i].mtimeMs}:${stats[i].size}`).join("|");
   if (fileCache?.sig === sig) return fileCache.chunks;
   const chunks: Chunk[] = [];
   for (const n of names) {
-    const text = await fs.readFile(path.join(dir(), n), "utf8");
+    const text = await fs.readFile(path.join(/*turbopackIgnore: true*/ dir(), n), "utf8");
     chunks.push(...(/\.csv$/i.test(n) ? csvToChunks(n, text) : chunkMarkdown(n, text)));
   }
   fileCache = { sig, chunks };

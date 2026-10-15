@@ -21,13 +21,13 @@ const img = (src: string, alt: string): Img => ({ src, alt });
 export const siteImages = {
   /** Big banner behind the title of each page */
   hero: {
-    about: img(px(14383512), "Organised workshop with hand tools on a workbench"),
-    products: img(px(35284420), "Tractor and trailer in a golden wheat field"),
-    services: img(px(29785581), "Assorted hand tools on a garage workbench"),
-    brands: img(px(162553), "Wrenches and tools arranged on a workshop wall"),
-    gallery: img(px(34125493), "Wheat harvesting in a golden field"),
-    contact: img(px(5194769), "Pile of assorted hand tools"),
-    location: img(px(32539260), "Tractor in a wheat field under a cloudy sky"),
+    about: img("/images/IMG-20261004-WA0003.jpg", "Workshop tools and machinery arranged on showroom shelves"),
+    products: img("/images/IMG-20261004-WA0007.jpg", "Power tillers displayed at the machinery showroom"),
+    services: img("/images/IMG-20261004-WA0004.jpg", "Close view of agricultural machine blades and parts"),
+    brands: img("/images/IMG-20261004-WA0011.jpg", "Hand tools arranged inside the machinery showroom"),
+    gallery: img("/images/IMG-20261004-WA0006.jpg", "Machinery showroom counter and equipment display"),
+    contact: img("/images/IMG-20261004-WA0003.jpg", "Workshop tools and machinery arranged on showroom shelves"),
+    location: img("/images/IMG-20261004-WA0002.jpg", "Agricultural machinery displayed outside the shop"),
   },
 
   /** Photo beside the text on the About page */
@@ -53,7 +53,13 @@ export const siteImages = {
    * ids: corn-sheller, self-propelled-reaper, power-tiller, cordless-tool-kit, chainsaw, mechanical-tools, machinery
    * Example:  "power-tiller": gdrive("1AbCdEfGh..."),
    */
-  products: {} as Record<string, string>,
+  products: {
+    "corn-sheller": "/images/IMG-20261004-WA0002.jpg",
+    "cordless-tool-kit": "/images/IMG-20261004-WA0011.jpg",
+    chainsaw: "/images/IMG-20261004-WA0004.jpg",
+    "mechanical-tools": "/images/IMG-20261004-WA0003.jpg",
+    machinery: "/images/IMG-20261004-WA0006.jpg",
+  } as Record<string, string>,
 };
 
 export const productImage = (id: string, fallback: string) => siteImages.products[id] || fallback;

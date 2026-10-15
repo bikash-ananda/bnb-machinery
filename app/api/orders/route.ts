@@ -7,6 +7,7 @@ import { notifyNewOrder } from "@/lib/server/notify";
 import { dbRequest, hasSupabaseConfig } from "@/lib/server/supabase";
 import { createOrder } from "@/src/modules/sales/orders";
 import { InsufficientStockError } from "@/src/modules/inventory/service";
+import { createPaymentQr, isPaymentProvider, paymentProviderName } from "@/lib/server/payment-qr";
 
 export const runtime = "nodejs";
 
@@ -29,9 +30,12 @@ export async function POST(request: Request) {
   const email = str(c.email, 120);
   const address = str(c.address, 200);
   const district = str(c.district, 60);
-  const note = str(body.note, 300);
+  const customerNote = str(body.note, 300);
   const delivery = body.delivery === "pickup" ? "pickup" : "delivery";
   const payment = body.payment === "shop" || body.payment === "digital" ? body.payment : "cod";
+  const paymentProvider = payment === "digital" && isPaymentProvider(body.paymentProvider) ? body.paymentProvider : null;
+  if (payment === "digital" && !paymentProvider) return fail("Choose a bank or wallet for your payment QR.");
+  const note = [customerNote, paymentProvider ? `Payment preference: ${paymentProviderName(paymentProvider)}` : ""].filter(Boolean).join("\n").slice(0, 500);
 
   if (name.length < 2) return fail("Please enter your name.");
   const digits = phone.replace(/\D/g, "");
@@ -52,7 +56,8 @@ export async function POST(request: Request) {
   }
 
   const subtotal = lines.reduce((n, l) => n + (l.price ?? 0) * l.qty, 0);
-  const unpriced = lines.filter((l) => l.price === null).length;
+  let total = subtotal;
+  let unpriced = lines.filter((l) => l.price === null).length;
   const d = new Date();
   const yymmdd = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
   let orderNo = `MTN-${yymmdd}-${randomInt(1000, 10000)}`;
@@ -82,6 +87,8 @@ export async function POST(request: Request) {
         items: lines.map((l) => ({ slug: l.id, qty: l.qty })),
       });
       orderNo = o.orderNo;
+      total = Number(o.totalPaisa) / 100;
+      unpriced = o.unpriced;
       saved = true;
     } catch (e) {
       if (e instanceof InsufficientStockError) return fail(e.message, 409);
@@ -90,10 +97,17 @@ export async function POST(request: Request) {
   }
 
   const summary = lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - Rs " + (l.price * l.qty).toLocaleString("en-IN") : " - price on request"}`).join("\n");
-  void notifyNewOrder(
+  const paymentLabel = paymentProvider ? `${payment} (${paymentProviderName(paymentProvider)})` : payment;
+  if (!process.env.DATABASE_URL) void notifyNewOrder(
     `New order ${orderNo} - ${name}`,
-    `Order ${orderNo}\nName: ${name}\nPhone: ${phone}\n${email ? "Email: " + email + "\n" : ""}${delivery === "pickup" ? "Pickup from shop" : "Deliver to: " + address + ", " + district}\nPayment: ${payment}\n\n${summary}\n\nSubtotal: Rs ${subtotal.toLocaleString("en-IN")}${unpriced ? " (+" + unpriced + " item(s) price on request)" : ""}${note ? "\nNote: " + note : ""}`,
+    `Order ${orderNo}\nName: ${name}\nPhone: ${phone}\n${email ? "Email: " + email + "\n" : ""}${delivery === "pickup" ? "Pickup from shop" : "Deliver to: " + address + ", " + district}\nPayment: ${paymentLabel}\n\n${summary}\n\nSubtotal: Rs ${subtotal.toLocaleString("en-IN")}\nOrder total: Rs ${total.toLocaleString("en-IN")}${unpriced ? " (+" + unpriced + " item(s) price on request)" : ""}${note ? "\nNote: " + note : ""}`,
   );
 
-  return NextResponse.json({ orderNo, subtotal, unpriced, lines, saved });
+  let paymentQr = null;
+  if (saved && paymentProvider && unpriced === 0 && total > 0) {
+    try { paymentQr = createPaymentQr(paymentProvider, total, orderNo); }
+    catch (e) { console.error("payment QR creation failed", e); }
+  }
+
+  return NextResponse.json({ orderNo, subtotal, total, unpriced, lines, saved, paymentProvider, paymentQr });
 }

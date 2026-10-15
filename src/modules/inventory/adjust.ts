@@ -6,7 +6,7 @@ import { ACC, postJournal } from "../accounting/posting";
 import { products } from "../catalog/schema";
 import { weightedAverage } from "./costing";
 import { stockBalances } from "./schema";
-import { postMovement } from "./service";
+import { defaultLocationId, postMovement } from "./service";
 
 /**
  * Opening stock / stock-count correction. Updates the stock ledger AND the accounts together.
@@ -14,7 +14,7 @@ import { postMovement } from "./service";
  */
 export async function adjustStock(
   tx: Tx,
-  a: { productId: string; qty: number; reason: "OPENING" | "COUNT"; unitCostPaisa?: bigint; note?: string; createdBy?: string },
+  a: { productId: string; qty: number; reason: "OPENING" | "COUNT"; unitCostPaisa?: bigint; locationId?: string; note?: string; createdBy?: string },
 ) {
   if (!Number.isFinite(a.qty) || a.qty === 0) throw new Error("Quantity must be non-zero.");
   await tx.execute(sql`select 1 from products where id = ${a.productId} for update`);
@@ -30,7 +30,20 @@ export async function adjustStock(
   }
   if (cost === null || cost === undefined) throw new Error("Set a cost for this product before correcting stock.");
 
-  await postMovement(tx, { productId: a.productId, qty: a.qty, type: a.reason === "OPENING" ? "OPENING" : "ADJUSTMENT", refType: "adjustment", note: a.note, createdBy: a.createdBy });
+  const locationId = a.locationId ?? (await defaultLocationId(tx));
+  if (a.reason === "COUNT" && a.qty < 0) {
+    // Serialize a stock reduction with reservations so it cannot consume inventory committed to an order.
+    const balance = await tx.execute(sql`select on_hand from stock_balances where product_id = ${a.productId} and location_id = ${locationId} for update`);
+    const onHand = Number((balance.rows[0] as { on_hand?: string } | undefined)?.on_hand ?? 0);
+    const reservedResult = await tx.execute(sql`select coalesce(sum(qty), 0) as reserved from stock_reservations where product_id = ${a.productId} and location_id = ${locationId} and status = 'ACTIVE'`);
+    const reserved = Number((reservedResult.rows[0] as { reserved?: string } | undefined)?.reserved ?? 0);
+    const milliUnits = (value: number) => Math.round(value * 1000);
+    if (milliUnits(onHand) + milliUnits(a.qty) < milliUnits(reserved)) {
+      throw new Error("This correction would reduce stock below the quantity reserved for orders.");
+    }
+  }
+
+  await postMovement(tx, { productId: a.productId, locationId, qty: a.qty, type: a.reason === "OPENING" ? "OPENING" : "ADJUSTMENT", refType: "adjustment", note: a.note, createdBy: a.createdBy });
 
   const value = lineTotal(Math.abs(a.qty), a.unitCostPaisa ?? cost);
   const gain = a.qty > 0;

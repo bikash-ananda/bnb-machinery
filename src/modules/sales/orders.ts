@@ -5,6 +5,7 @@ import { postInvoiceCogs, postInvoiceSale, postPayment } from "../accounting/pos
 import { products } from "../catalog/schema";
 import { customers } from "../customers/schema";
 import { InsufficientStockError, consumeReservations, releaseReservations, reserveStock } from "../inventory/service";
+import { enqueueAutomationEvent } from "../automation/events";
 import { nextSeq } from "./numbering";
 import { priceLine, type TaxCategory } from "./pricing";
 import { invoiceItems, invoices, orderItems, orders, payments } from "./schema";
@@ -57,9 +58,12 @@ export async function createOrderTx(tx: Tx, input: NewOrderInput) {
   const phone = (input.customer.phone ?? "").replace(/[^\d+]/g, "");
   let customerId: string | null = null;
   if (phone) {
-    await tx.insert(customers).values({ name, phone, email: input.customer.email || null, address: input.customer.address || null, district: input.customer.district || null, panNo: input.customer.panNo || null }).onConflictDoNothing();
+    const [createdCustomer] = await tx.insert(customers).values({ name, phone, email: input.customer.email || null, address: input.customer.address || null, district: input.customer.district || null, panNo: input.customer.panNo || null }).onConflictDoNothing().returning({ id: customers.id });
     const [c] = await tx.select().from(customers).where(eq(customers.phone, phone)).limit(1);
     customerId = c?.id ?? null;
+    if (createdCustomer && c) {
+      await enqueueAutomationEvent(tx, { eventType: "CUSTOMER_CREATED", aggregateType: "customer", aggregateId: c.id, dedupeKey: "customer-created:" + c.id });
+    }
     if (c && input.customer.panNo && !c.panNo) await tx.update(customers).set({ panNo: input.customer.panNo }).where(eq(customers.id, c.id));
   }
 
@@ -90,6 +94,7 @@ export async function createOrderTx(tx: Tx, input: NewOrderInput) {
     }
     throw e;
   }
+  await enqueueAutomationEvent(tx, { eventType: "ORDER_CREATED", aggregateType: "order", aggregateId: order.id, payload: { channel: input.channel ?? "WEB" }, dedupeKey: "order-created:" + order.id });
   return { id: order.id, orderNo, customerId, totalPaisa: total, unpriced };
 }
 export const createOrder = (input: NewOrderInput) => db.transaction((tx) => createOrderTx(tx, input));
@@ -134,6 +139,8 @@ export async function confirmOrderTx(tx: Tx, orderId: string, createdBy?: string
   const inv = await issueInvoice(tx, orderId, createdBy);
   await postInvoiceSale(tx, inv.id, createdBy);
   await postInvoiceCogs(tx, inv.id, createdBy);
+  await enqueueAutomationEvent(tx, { eventType: "ORDER_STATUS_CHANGED", aggregateType: "order", aggregateId: orderId, payload: { from: "NEW", status: "CONFIRMED" }, dedupeKey: "order-status:" + orderId + ":CONFIRMED" });
+  await enqueueAutomationEvent(tx, { eventType: "INVOICE_ISSUED", aggregateType: "invoice", aggregateId: inv.id, payload: { orderId }, dedupeKey: "invoice-issued:" + inv.id });
   return inv;
 }
 export const confirmOrder = (orderId: string, createdBy?: string) => db.transaction((tx) => confirmOrderTx(tx, orderId, createdBy));
@@ -146,6 +153,7 @@ export async function cancelOrder(orderId: string) {
     if (row.status !== "NEW") throw new OrderError("Only new orders can be cancelled. Use a credit note after invoicing.");
     await releaseReservations(tx, orderId);
     await tx.update(orders).set({ status: "CANCELLED" }).where(eq(orders.id, orderId));
+    await enqueueAutomationEvent(tx, { eventType: "ORDER_STATUS_CHANGED", aggregateType: "order", aggregateId: orderId, payload: { from: row.status, status: "CANCELLED" }, dedupeKey: "order-status:" + orderId + ":CANCELLED" });
   });
 }
 
@@ -157,6 +165,7 @@ export async function recordPaymentTx(tx: Tx, orderId: string, method: string, a
   const paid = BigInt(s.s);
   const status = paid >= o.total ? "PAID" : paid > 0n ? "PARTIAL" : "UNPAID";
   await tx.update(orders).set({ paymentStatus: status }).where(eq(orders.id, orderId));
+  await enqueueAutomationEvent(tx, { eventType: "PAYMENT_RECEIVED", aggregateType: "order", aggregateId: orderId, payload: { paymentId: pay.id, amountPaisa: amountPaisa.toString(), method }, dedupeKey: "payment-received:" + pay.id });
   return status;
 }
 export const recordPayment = (orderId: string, method: string, amountPaisa: bigint, reference?: string, createdBy?: string) =>

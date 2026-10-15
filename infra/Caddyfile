@@ -8,17 +8,25 @@
 		Permissions-Policy "camera=(), geolocation=(), microphone=(self)"
 		-Server
 	}
+	@adminDenied {
+		path /admin /admin/* /api/admin /api/admin/*
+		not remote_ip {$ADMIN_ALLOWED_IPS}
+	}
+	respond @adminDenied 403
 	reverse_proxy web:3000
 }
 
 # Management console on its own host. Set ADMIN_ALLOWED_IPS in .env.production to restrict by IP.
 admin.{$DOMAIN} {
 	encode zstd gzip
-	@denied not remote_ip {$ADMIN_ALLOWED_IPS}
+	@denied {
+		not remote_ip {$ADMIN_ALLOWED_IPS}
+	}
 	respond @denied 403
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options nosniff
+		-X-Frame-Options
 		X-Frame-Options DENY
 		Referrer-Policy no-referrer
 		Cache-Control "no-store"

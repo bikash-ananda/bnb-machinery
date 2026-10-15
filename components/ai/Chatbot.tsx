@@ -38,7 +38,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
 const STORE = "bnb-chat-v4";
-const TEASER = "bnb-chat-teaser";
 
 export default function Chatbot() {
   const pathname = usePathname();
@@ -61,7 +60,6 @@ export default function Chatbot() {
   );
   const [flow, setFlow] = useState<Flow>(saved?.flow ?? null);
   const [typing, setTyping] = useState(false);
-  const [teaser, setTeaser] = useState(false);
 
   const [speakOn, setSpeakOn] = useState(false);
   const [call, setCall] = useState(false);
@@ -100,12 +98,6 @@ export default function Chatbot() {
     if (messages.length === 0) return;
     try { sessionStorage.setItem(STORE, JSON.stringify({ messages, flow })); } catch {}
   }, [messages, flow]);
-
-  useEffect(() => {
-    try { if (sessionStorage.getItem(TEASER)) return; } catch {}
-    const id = setTimeout(() => setTeaser(true), 8000);
-    return () => clearTimeout(id);
-  }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages, typing, open, interim]);
   useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
@@ -428,13 +420,14 @@ export default function Chatbot() {
       });
       if (res.status === 503) { aiState.current = "off"; return null; }
       if (!res.ok) return null;
-      const d = (await res.json()) as { text?: string; handoff?: boolean };
+      const d = (await res.json()) as { text?: string; handoff?: boolean; sources?: { title: string; url: string }[] };
       if (!d.text) return null;
       const asked = (history[history.length - 1]?.content ?? "").slice(0, 200);
       const waHref = `https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(d.handoff ? "Hello B & B Machinery, I need help: " + asked : "Hello B & B Machinery")}`;
       return {
         text: d.text,
-        links: d.handoff
+        links: [
+          ...(d.handoff
           ? [
               { label: T(l, "💬 Talk to our team", "💬 टोलीसँग कुरा गर्नुहोस्"), href: waHref, external: true },
               { label: T(l, "☎ Call now", "☎ अहिले फोन गर्नुहोस्"), href: `tel:${company.contact.phoneRaw}`, external: true },
@@ -442,7 +435,9 @@ export default function Chatbot() {
           : [
               { label: T(l, "Get a quote →", "कोटेसन लिनुहोस् →"), href: "/contact" },
               { label: T(l, "💬 Ask our team", "💬 टोलीलाई सोध्नुहोस्"), href: waHref, external: true },
-            ],
+            ]),
+          ...(d.sources ?? []).slice(0, 3).map((source) => ({ label: `Source: ${source.title}`, href: source.url, external: true })),
+        ],
         chips: l === "ne" ? ["मूल्य/कोटेसन", "स्पेयर पार्ट्स", "सम्पर्क", "ठेगाना"] : ["Get a quote", "Spare parts", "Contact", "Location"],
       };
     } catch {
@@ -541,8 +536,6 @@ export default function Chatbot() {
 
   function toggle() {
     if (open) { closeChat(); } else { setOpen(true); }
-    setTeaser(false);
-    try { sessionStorage.setItem(TEASER, "1"); } catch {}
   }
 
   function reset() {
@@ -724,12 +717,6 @@ export default function Chatbot() {
             </form>
           </div>
         </section>
-      )}
-
-      {teaser && !open && (
-        <button type="button" onClick={toggle} className="fixed bottom-24 right-4 z-[60] max-w-[220px] rounded-2xl rounded-br-sm border border-[var(--border)] bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-xl sm:bottom-24">
-          {T(lang, "Machine problem? Ask us 👋", "मेसिनमा समस्या छ? सोध्नुहोस् 👋")}
-        </button>
       )}
 
       <Draggable id="chat" className="fixed bottom-5 right-4 z-[60] sm:right-5">

@@ -5,11 +5,12 @@ import { db } from "@/src/db/client";
 import { jsonSafe } from "@/src/lib/json";
 import { InsufficientStockError } from "@/src/modules/inventory/service";
 import { OrderError, cancelOrder, confirmOrder, recordPayment } from "@/src/modules/sales/orders";
+import { orderStatusSources } from "@/src/modules/sales/order-status";
+import { enqueueAutomationEvent } from "@/src/modules/automation/events";
 import { orders, payments } from "@/src/modules/sales/schema";
 
 export const runtime = "nodejs";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const FROM: Record<string, string[]> = { DISPATCHED: ["CONFIRMED"], READY_FOR_PICKUP: ["CONFIRMED"], COMPLETED: ["CONFIRMED", "DISPATCHED", "READY_FOR_PICKUP"] };
 const METHODS = ["CASH", "QR", "ESEWA", "KHALTI", "CARD", "BANK"];
 
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -31,8 +32,19 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
       await logAudit(g.session, "order.cancel", "order", id, null, request);
       return jsonSafe({ ok: true });
     }
-    if (b.action === "status" && typeof b.status === "string" && FROM[b.status]) {
-      const done = await db.update(orders).set({ status: b.status }).where(and(eq(orders.id, id), inArray(orders.status, FROM[b.status]))).returning({ id: orders.id });
+    if (b.action === "status" && typeof b.status === "string") {
+      const sources = orderStatusSources(b.status).filter((status) => status !== "NEW");
+      if (sources.length === 0) return jsonSafe({ error: "Invalid status change." }, 400);
+      const done = await db.transaction(async (tx) => {
+        const changed = await tx.update(orders).set({ status: b.status as string }).where(and(eq(orders.id, id), inArray(orders.status, sources))).returning({ id: orders.id });
+        if (changed.length) {
+          await enqueueAutomationEvent(tx, {
+            eventType: "ORDER_STATUS_CHANGED", aggregateType: "order", aggregateId: id,
+            payload: { status: b.status }, dedupeKey: "order-status:" + id + ":" + b.status,
+          });
+        }
+        return changed;
+      });
       if (done.length === 0) return jsonSafe({ error: "That change is not allowed from the current status." }, 409);
       await logAudit(g.session, "order.status", "order", id, { status: b.status }, request);
       return jsonSafe({ ok: true });

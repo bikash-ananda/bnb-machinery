@@ -1,46 +1,108 @@
-# Deploy on Contabo Cloud VPS (4 vCPU, 8 GB RAM, 100 GB SSD, 1 server)
+# B&B Machinery production setup on Contabo
 
-Deploy last, after Phases 0–4 work locally. These steps are ready now.
+This project runs as a single Next.js standalone container behind Caddy. The web container is not published directly; only Caddy exposes ports 80 and 443. Postgres and Redis stay on the private Compose network. Next.js recommends placing a reverse proxy in front of a self-hosted server ([self-hosting guide](https://nextjs.org/docs/app/guides/self-hosting)).
 
-## 1. Order and first login
-1. Choose **Ubuntu 24.04**, region **Asia (India)** (chosen by owner; good latency to Nepal), add your **SSH public key** at checkout (not a root password).
-2. Buy a domain; create DNS `A` records: `@`, `www`, `admin` -> server IP (lower TTL to 300 first).
-3. `ssh root@SERVER_IP`
+## Before connecting the VPS
 
-## 2. Harden (once)
-Copy `infra/scripts/harden-server.sh` to the server and run it as root: `bash harden-server.sh deploy`.
-It creates the `deploy` user, enables the firewall (22/80/443), disables password SSH and root login, installs fail2ban, auto-updates and Docker.
-**Test `ssh deploy@SERVER_IP` in a second window before closing the first.**
+- Use a domain you control. Point A records for the root domain, www, and admin to 169.58.25.131. Caddy needs public DNS plus reachable TCP ports 80 and 443 to issue HTTPS certificates.
+- Have a stable public IP/CIDR for the admin allowlist. The shipped example uses 203.0.113.1/32, a documentation-only address that intentionally blocks admin access until replaced.
+- Make sure the project changes intended for production are pushed to the repository's main branch before cloning it on the server.
+- Prepare Supabase's project URL and service-role key. Current admin login and legacy inventory still use Supabase; the service-role key must stay server-side.
+- Verify a sender domain with Resend and set OTP_FROM_EMAIL. Admin sign-in requires email OTP, OTP_HASH_SECRET, and the Supabase admin-auth SQL migrations.
 
-## 3. Get the code and secrets
-```bash
-git clone https://github.com/<you>/<repo>.git app && cd app
-cp infra/.env.production.example infra/.env.production && chmod 600 infra/.env.production
-nano infra/.env.production      # DOMAIN, APP_ORIGIN, passwords (openssl rand -hex 32), SESSION_SECRET, TOTP_ENC_KEY
+## Harden the VPS
+
+The supplied instance is 169.58.25.131. Add an SSH public key in the Contabo console, then connect as root:
+
+```sh
+ssh root@169.58.25.131
 ```
 
-## 4. Start
-```bash
+Copy infra/scripts/harden-server.sh to the server and run it as root. The script creates a deploy account, installs Docker, enables a firewall for SSH/HTTP/HTTPS, and disables root/password SSH. Keep the first SSH session open, then verify a second session works before closing it:
+
+```sh
+ssh deploy@169.58.25.131
+```
+
+Do not run the hardening script until a valid SSH public key is installed for root; it deliberately stops if it cannot copy one to the deploy account.
+
+## Install the release and production settings
+
+From a deploy SSH session, clone the repository's production main branch into /home/deploy/app:
+
+```sh
+cd /home/deploy
+git clone https://github.com/bikash-ananda/bnb-machinery.git app
+cd app
+cp infra/.env.production.example infra/.env.production
+chmod 600 infra/.env.production
+```
+
+Generate separate random passwords on the VPS with openssl rand -hex 32. Put them in POSTGRES_PASSWORD, REDIS_PASSWORD, and OTP_HASH_SECRET. The hex format is safe in the Postgres connection URL. Fill in:
+
+- DOMAIN: the domain you control, without https://.
+- APP_ORIGIN: https:// plus the root domain, with no trailing slash.
+- ADMIN_ALLOWED_IPS: your stable public IPv4/CIDR, for example 198.51.100.25/32. You can include your office VPN/network CIDR too. The root and www domains block /admin and /api/admin from all other IPs.
+- SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY: from the Supabase project settings.
+- RESEND_API_KEY and OTP_FROM_EMAIL: the API key and an authenticated sender address.
+- AUTOMATION_FROM_EMAIL and AUTOMATION_ALERT_EMAIL: verified Resend sender and the business inbox for order, stock and daily finance alerts. Generate AUTOMATION_CRON_SECRET with `openssl rand -hex 32`; keep it private.
+- ORDER_NOTIFY_EMAIL: the inbox that receives new order notices. It defaults to bikashengineering100@gmail.com in the example.
+- OPENAI_API_KEY, GOOGLE_CSE_API_KEY, and GOOGLE_CSE_CX only if those integrations are enabled.
+
+Never commit or send infra/.env.production to Git. This repository ignores .env* files, and .dockerignore excludes them from Docker build contexts.
+
+## Initialize and start
+
+First apply the checked-in SQL under supabase/migrations/ to the configured Supabase project, in filename order. Then, from the app directory:
+
+```sh
+docker compose -f infra/docker-compose.yml --env-file infra/.env.production config -q
 docker compose -f infra/docker-compose.yml --env-file infra/.env.production up -d --build
-docker compose -f infra/docker-compose.yml --env-file infra/.env.production exec web pnpm db:migrate   # once Drizzle exists (Roadmap 0.3)
-docker compose -f infra/docker-compose.yml --env-file infra/.env.production exec web pnpm admin:create # first owner + 2FA (Roadmap 1.4)
+docker compose -f infra/docker-compose.yml --env-file infra/.env.production ps
 ```
-Caddy fetches HTTPS certificates automatically once DNS points to the server.
 
-## 5. Move data from Supabase (Roadmap 1.2)
-`pg_dump` the Supabase database (connection string from Supabase > Project Settings > Database) and restore into the VPS Postgres; export product images from
-Supabase Storage / the images table into `/data/media`. The migration script prints row counts to compare. Keep Supabase read-only for 2 weeks as a fallback.
+Compose starts Postgres and Redis, runs Drizzle migrations as a one-shot service, waits for the migration and web health check, and then starts Caddy. Check failures with:
 
-## 6. Backups and monitoring
-Cron: `15 2 * * * /home/deploy/app/infra/scripts/backup.sh`. Configure `rclone` for an off-site bucket. Run `restore.sh` monthly. Add Uptime Kuma (second container or external) for site + admin.
-Take a **Contabo snapshot** before every major upgrade (you have 1).
-
-## 7. Updating
-```bash
-git pull && docker compose -f infra/docker-compose.yml --env-file infra/.env.production up -d --build
-docker compose ... exec web pnpm db:migrate
+```sh
+docker compose -f infra/docker-compose.yml --env-file infra/.env.production logs --tail=100 migrate web caddy
 ```
-Rollback: `git checkout <previous-tag>` and rebuild; if a migration broke data, restore the last dump (restore.sh) or the snapshot.
 
-## 8. Go-live checklist
-DNS + HTTPS ok · 2FA enforced · admin IP allowlist decided · backups + restore drill done · accountant approved invoice format and VAT settings · test order, quote, invoice print on A4 and 80mm · WhatsApp/email templates approved.
+Compose also starts the internal automation runner. It calls the authenticated automation endpoint every minute to drain business events, send retryable emails and schedule payment reminders, customer follow-ups and the Nepal-time daily digest. The runner is private to the Compose network and is not exposed through Caddy.
+
+Open https://DOMAIN after DNS has propagated. The basic health route is https://DOMAIN/api/health. Admin is available at https://admin.DOMAIN/admin/login or https://DOMAIN/admin/login from an allowlisted IP.
+
+## Create the requested Super Admin
+
+Run this after the Supabase admin-auth migration is applied and the production environment is configured. To create the account if it is new, enter a unique temporary password without putting it into shell history:
+
+```sh
+cd /home/deploy/app
+read -rsp 'Temporary admin password: ' SUPER_ADMIN_TEMP_PASSWORD; echo
+export SUPER_ADMIN_TEMP_PASSWORD
+docker compose -f infra/docker-compose.yml --env-file infra/.env.production run --rm -e SUPER_ADMIN_TEMP_PASSWORD migrate node scripts/create-super-admin.mjs --email bikashengineering100@gmail.com --name 'B&B Super Admin'
+unset SUPER_ADMIN_TEMP_PASSWORD
+```
+
+The bootstrap writes a scrypt hash and requires a password change at first login. The admin signs in at /admin/login, receives the one-time code at the specified email, and chooses a permanent password. If the address already has an admin account, promote it without resetting its password:
+
+```sh
+docker compose -f infra/docker-compose.yml --env-file infra/.env.production run --rm migrate node scripts/create-super-admin.mjs --promote bikashengineering100@gmail.com
+```
+
+The account cannot complete sign-in until Resend, the verified sender, OTP_HASH_SECRET, and Supabase are configured.
+
+## Verify, back up, and update
+
+Confirm the home page and /api/health load over HTTPS, test the checkout and payment QR flow, and verify the email OTP arrives before sharing the site publicly. Test the admin allowlist from both an allowed and a blocked network.
+
+For backups, configure an off-site copy and schedule infra/scripts/backup.sh; periodically restore a database dump to the scratch database using infra/scripts/restore.sh. A snapshot on the same VPS is not an off-site backup.
+
+To update after publishing changes to main:
+
+```sh
+cd /home/deploy/app
+git pull --ff-only origin main
+docker compose -f infra/docker-compose.yml --env-file infra/.env.production up -d --build
+```
+
+The Compose volumes retain Postgres, Redis, media, bot data, and Caddy certificates across application updates.
