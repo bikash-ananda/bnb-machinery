@@ -11,7 +11,7 @@ FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
-ARG APP_ORIGIN=https://example.com
+ARG APP_ORIGIN=https://machinery-tools.com
 ENV APP_ORIGIN=${APP_ORIGIN}
 RUN pnpm build
 

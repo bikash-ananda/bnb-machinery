@@ -4,7 +4,10 @@ import SmartSearch from "@/components/search/SmartSearch";
 import { getShopProducts } from "@/lib/server/catalog";
 import { searchProducts } from "@/src/lib/search/engine";
 
-export const metadata: Metadata = { title: "Smart search" };
+export const metadata: Metadata = {
+  title: "Search Machinery, Tools & Spare Parts",
+  robots: { index: false, follow: true },
+};
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const q = ((await searchParams).q ?? "").slice(0, 80);

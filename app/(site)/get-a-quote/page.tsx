@@ -1,8 +1,19 @@
 import type { Metadata } from "next";
 import StockQuotePicker from "@/components/forms/StockQuotePicker";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import { getShopProducts } from "@/lib/server/catalog";
 
-export const metadata: Metadata = { title: "Get a quote", description: "Choose machinery, tools and parts from B&B's confirmed stock." };
+export const metadata: Metadata = {
+  title: "Machinery, Tools & Spare Parts Quote",
+  description:
+    "Request a price and availability check for machinery, tools or spare parts from Machinery Tools Nepal in Pokhara.",
+  alternates: { canonical: "/get-a-quote" },
+  ...pageSocialMetadata(
+    "Machinery, Tools & Spare Parts Quote | Machinery Tools Nepal",
+    "Request current pricing and availability for machinery, tools and spare parts from our Pokhara team.",
+    "/get-a-quote",
+  ),
+};
 export const revalidate = 30;
 
 export default async function GetAQuotePage({ searchParams }: { searchParams: Promise<{ item?: string }> }) {

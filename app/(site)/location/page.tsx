@@ -1,8 +1,19 @@
 import type { Metadata } from "next";
 import PageHero from "@/components/sections/PageHero";
 import { company } from "@/data/company";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = { title: "Location" };
+export const metadata: Metadata = {
+  title: "Machinery Shop Location in Pokhara",
+  description:
+    "Visit Machinery Tools Nepal at Baglung Buspark, Pokhara. Find directions, call before you visit, and see the districts we serve.",
+  alternates: { canonical: "/location" },
+  ...pageSocialMetadata(
+    "Machinery Shop Location in Pokhara | Machinery Tools Nepal",
+    "Find our machinery and tools showroom at Baglung Buspark, Pokhara.",
+    "/location",
+  ),
+};
 
 export default function LocationPage() {
   const l = company.location;

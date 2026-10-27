@@ -8,13 +8,21 @@ import Reveal from "@/components/ui/Reveal";
 import SafeImage from "@/components/ui/SafeImage";
 import { company } from "@/config/site";
 import { distribution } from "@/config/brand";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
+import { absoluteSiteUrl } from "@/lib/seo/site-url";
 import { getShopProducts } from "@/lib/server/catalog";
 import { npr } from "@/lib/shop/types";
 
 export const metadata: Metadata = {
-  title: "Machinery, Tools & Spare Parts in Pokhara",
+  title: "Machinery & Power Tools in Pokhara",
   description:
-    "Machinery Tools Nepal: machinery, tools and spare parts in Pokhara and Western Nepal. Main distributor of Deli for Gandaki and Dhaulagiri.",
+    "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse Machinery Tools Nepal online or ask about stock, service and wholesale pricing.",
+  alternates: { canonical: "/" },
+  ...pageSocialMetadata(
+    "Machinery & Power Tools in Pokhara | Machinery Tools Nepal",
+    "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online or ask about stock, service and wholesale pricing.",
+    "/",
+  ),
 };
 export const revalidate = 60;
 
@@ -22,8 +30,31 @@ export default async function HomePage() {
   const all = await getShopProducts();
   const featured = (all.filter((p) => p.featured).length ? all.filter((p) => p.featured) : all).slice(0, 8);
   const categories = Array.from(new Set(all.map((p) => p.category))).slice(0, 8);
+  const localBusiness = {
+    "@context": "https://schema.org",
+    "@type": "Store",
+    "@id": absoluteSiteUrl("/#business"),
+    name: company.name,
+    url: absoluteSiteUrl("/"),
+    image: absoluteSiteUrl("/images/IMG-20261004-WA0010.jpg"),
+    telephone: company.contact.phoneRaw,
+    email: company.contact.email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: company.location.address,
+      addressLocality: company.location.city,
+      addressRegion: company.location.province,
+      addressCountry: "NP",
+    },
+    areaServed: company.serviceAreas.map((name) => ({ "@type": "AdministrativeArea", name })),
+    sameAs: Object.values(company.social).filter(Boolean),
+  };
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusiness).replace(/</g, "\\u003c") }}
+      />
       {/* HERO */}
       <section className="hero-adaptive relative overflow-hidden bg-[#07111f] text-[color:var(--hero-fg,#fff)]">
         <HeroBackdrop slides={heroSlides("home")} />

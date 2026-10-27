@@ -1,5 +1,29 @@
 import type { MetadataRoute } from "next";
-const base = process.env.APP_ORIGIN || "http://localhost:3000";
-export default function sitemap(): MetadataRoute.Sitemap {
-  return ["", "/about", "/products", "/brands", "/services", "/gallery", "/contact", "/location"].map((p) => ({ url: base + p, lastModified: new Date() }));
+import { absoluteSiteUrl } from "@/lib/seo/site-url";
+import { getShopProducts } from "@/lib/server/catalog";
+
+export const revalidate = 3600;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const pages = [
+    "/",
+    "/about",
+    "/products",
+    "/brands",
+    "/brands/deli",
+    "/services",
+    "/gallery",
+    "/get-a-quote",
+    "/contact",
+    "/location",
+  ];
+  const products = await getShopProducts();
+
+  return [
+    ...pages.map((path) => ({ url: absoluteSiteUrl(path) })),
+    ...products.map((product) => ({
+      url: absoluteSiteUrl(`/products/${encodeURIComponent(product.slug)}`),
+      ...(product.image && { images: [absoluteSiteUrl(product.image)] }),
+    })),
+  ];
 }

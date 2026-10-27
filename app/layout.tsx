@@ -8,6 +8,8 @@ import {
 import "./globals.css";
 import Chatbot from "@/components/ai/Chatbot";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
+import { siteOrigin } from "@/lib/seo/site-url";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,22 +29,18 @@ const nepaliFont = Noto_Sans_Devanagari({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.APP_ORIGIN || "http://localhost:3000"),
-  openGraph: { type: "website", siteName: "Machinery Tools Nepal", locale: "en_NP", images: ["/images/IMG-20261004-WA0010.jpg"] },
+  metadataBase: new URL(siteOrigin),
+  ...pageSocialMetadata(
+    "Machinery Tools Nepal | Machinery, Tools & Spare Parts in Pokhara",
+    "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online or ask about current stock, service and wholesale pricing.",
+    "/",
+  ),
   title: {
-    default: "Machinery Tools Nepal | Machinery & Machinery Parts in Pokhara",
+    default: "Machinery Tools Nepal",
     template: "%s | Machinery Tools Nepal",
   },
   description:
-    "Machinery Tools Nepal provides machinery, machinery parts, repair, maintenance, installation, spare parts and technical support in Pokhara and Western Nepal.",
-  keywords: [
-    "Machinery Tools Nepal",
-    "machinery Pokhara",
-    "machinery parts Pokhara",
-    "machinery spare parts",
-    "machinery repair",
-    "machinery maintenance",
-  ],
+    "Machinery Tools Nepal supplies machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online and ask about repair, maintenance and wholesale support.",
   authors: [{ name: "Machinery Tools Nepal" }],
   creator: "Machinery Tools Nepal",
   publisher: "Machinery Tools Nepal",

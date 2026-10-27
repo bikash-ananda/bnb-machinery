@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
 import PageHero from "@/components/sections/PageHero";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import Reveal from "@/components/ui/Reveal";
 import SafeImage from "@/components/ui/SafeImage";
 import { gallery } from "@/data/gallery";
 
-export const metadata: Metadata = { title: "Gallery" };
+export const metadata: Metadata = {
+  title: "Machinery & Tools Showroom Gallery",
+  description: "See machinery, tools and equipment at Machinery Tools Nepal's showroom in Pokhara.",
+  alternates: { canonical: "/gallery" },
+  ...pageSocialMetadata(
+    "Machinery & Tools Showroom Gallery | Machinery Tools Nepal",
+    "See machinery, tools and equipment at our showroom in Pokhara.",
+    "/gallery",
+  ),
+};
 
 export default function GalleryPage() {
   return (

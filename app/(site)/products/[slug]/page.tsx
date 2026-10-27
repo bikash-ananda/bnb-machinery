@@ -10,6 +10,8 @@ import Stars from "@/components/shop/Stars";
 import VideoList from "@/components/shop/VideoList";
 import SafeImage from "@/components/ui/SafeImage";
 import { company } from "@/config/site";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
+import { absoluteSiteUrl } from "@/lib/seo/site-url";
 import { getShopProduct, getShopProducts } from "@/lib/server/catalog";
 import { getProductExtras, getReviews } from "@/lib/server/extras";
 import { discountPct, npr } from "@/lib/shop/types";
@@ -17,10 +19,28 @@ import { discountPct, npr } from "@/lib/shop/types";
 export const revalidate = 60;
 type Props = { params: Promise<{ slug: string }> };
 
+function descriptionSnippet(value: string, maxLength = 160): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) return normalized;
+
+  const shortened = normalized.slice(0, maxLength - 1);
+  const lastSpace = shortened.lastIndexOf(" ");
+  return `${shortened.slice(0, lastSpace > 0 ? lastSpace : shortened.length)}…`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p = await getShopProduct((await params).slug);
   if (!p) return { title: "Product not found" };
-  return { title: p.name, description: p.description.slice(0, 160), openGraph: p.image ? { images: [p.image] } : undefined };
+  const productUrl = absoluteSiteUrl(`/products/${encodeURIComponent(p.slug)}`);
+  const description = descriptionSnippet(
+    `${p.brand} ${p.name} in ${p.category}. ${p.description || "View product details."} Contact Machinery Tools Nepal in Pokhara for current price and availability.`,
+  );
+  return {
+    title: `${p.name} price & availability in Nepal`,
+    description,
+    alternates: { canonical: productUrl },
+    ...pageSocialMetadata(`${p.name} | Machinery Tools Nepal`, description, productUrl, p.image || undefined),
+  };
 }
 
 export default async function ProductPage({ params }: Props) {
@@ -36,12 +56,17 @@ export default async function ProductPage({ params }: Props) {
 
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description,
-    image: p.images, brand: { "@type": "Brand", name: p.brand },
+    url: absoluteSiteUrl(`/products/${encodeURIComponent(p.slug)}`),
+    ...(p.model && { model: p.model }),
+    ...(p.images.length > 0 && { image: p.images.map((image) => absoluteSiteUrl(image)) }),
+    brand: { "@type": "Brand", name: p.brand },
     ...(rv.count > 0 && { aggregateRating: { "@type": "AggregateRating", ratingValue: Number(rv.avg.toFixed(1)), reviewCount: rv.count } }),
     ...(p.price !== null && !p.marketReference && {
       offers: {
         "@type": "Offer", priceCurrency: "NPR", price: p.price,
-        availability: p.availability === "out" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+        url: absoluteSiteUrl(`/products/${encodeURIComponent(p.slug)}`),
+        ...(p.availability === "out" && { availability: "https://schema.org/OutOfStock" }),
+        ...(p.availability === "in" && { availability: "https://schema.org/InStock" }),
       },
     }),
   };

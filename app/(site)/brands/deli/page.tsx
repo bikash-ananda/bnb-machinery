@@ -4,12 +4,19 @@ import L from "@/components/i18n/L";
 import Reveal from "@/components/ui/Reveal";
 import SafeImage from "@/components/ui/SafeImage";
 import { distribution } from "@/config/brand";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import { getShopProducts } from "@/lib/server/catalog";
 import { npr } from "@/lib/shop/types";
 
 export const metadata: Metadata = {
-  title: "Deli — Main Distributor for Gandaki & Dhaulagiri",
-  description: "Machinery Tools Nepal is the main distributor of Deli for Gandaki and Dhaulagiri. Browse Deli products or request a quotation.",
+  title: "Deli Tools Distributor in Gandaki & Dhaulagiri",
+  description: "Machinery Tools Nepal is the main Deli distributor for Gandaki and Dhaulagiri. Browse Deli products or request dealer, wholesale and product availability information.",
+  alternates: { canonical: "/brands/deli" },
+  ...pageSocialMetadata(
+    "Deli Tools Distributor in Gandaki & Dhaulagiri | Machinery Tools Nepal",
+    "Browse Deli products or ask Machinery Tools Nepal about dealer, wholesale and product availability in Gandaki and Dhaulagiri.",
+    "/brands/deli",
+  ),
 };
 export const revalidate = 60;
 

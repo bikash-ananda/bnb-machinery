@@ -2,8 +2,19 @@ import type { Metadata } from "next";
 import PageHero from "@/components/sections/PageHero";
 import QuoteForm from "@/components/forms/QuoteForm";
 import { company } from "@/data/company";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 
-export const metadata: Metadata = { title: "Contact & Quote" };
+export const metadata: Metadata = {
+  title: "Get a Machinery Quote in Pokhara",
+  description:
+    "Contact Machinery Tools Nepal in Pokhara for machinery, power tools, spare parts, service support, wholesale pricing and product availability.",
+  alternates: { canonical: "/contact" },
+  ...pageSocialMetadata(
+    "Get a Machinery Quote in Pokhara | Machinery Tools Nepal",
+    "Contact our Pokhara team about machinery, tools, spare parts, service and wholesale pricing.",
+    "/contact",
+  ),
+};
 
 export default async function ContactPage({ searchParams }: { searchParams: Promise<{ item?: string }> }) {
   const { item } = await searchParams;

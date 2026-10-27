@@ -23,7 +23,7 @@ services:
       context: ..
       dockerfile: infra/Dockerfile
       args:
-        APP_ORIGIN: ${APP_ORIGIN:-https://example.com}
+        APP_ORIGIN: ${APP_ORIGIN:-https://machinery-tools.com}
     restart: unless-stopped
     env_file: .env.production
     environment:
@@ -69,7 +69,7 @@ services:
       dockerfile: infra/Dockerfile
       target: build
       args:
-        APP_ORIGIN: ${APP_ORIGIN:-https://example.com}
+        APP_ORIGIN: ${APP_ORIGIN:-https://machinery-tools.com}
     env_file: .env.production
     command: ["pnpm", "db:migrate"]
     restart: "no"

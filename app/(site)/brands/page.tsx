@@ -1,10 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import PageHero from "@/components/sections/PageHero";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import Tx from "@/components/shop/Tx";
 import { getShopProducts } from "@/lib/server/catalog";
 
-export const metadata: Metadata = { title: "Brands & categories" };
+export const metadata: Metadata = {
+  title: "Machinery Brands & Categories in Nepal",
+  description:
+    "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category at Machinery Tools Nepal in Pokhara.",
+  alternates: { canonical: "/brands" },
+  ...pageSocialMetadata(
+    "Machinery Brands & Categories in Nepal | Machinery Tools Nepal",
+    "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category.",
+    "/brands",
+  ),
+};
 export const revalidate = 60;
 
 function count(values: string[]) {

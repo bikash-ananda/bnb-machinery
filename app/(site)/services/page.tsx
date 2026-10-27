@@ -2,10 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import L from "@/components/i18n/L";
 import PageHero from "@/components/sections/PageHero";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import Reveal from "@/components/ui/Reveal";
 import { services } from "@/data/services";
 
-export const metadata: Metadata = { title: "Services | सेवाहरू" };
+export const metadata: Metadata = {
+  title: "Machine Repair & Maintenance in Pokhara",
+  description:
+    "Ask Machinery Tools Nepal about machinery repair, maintenance, installation support and spare parts in Pokhara and nearby districts.",
+  alternates: { canonical: "/services" },
+  ...pageSocialMetadata(
+    "Machine Repair & Maintenance in Pokhara | Machinery Tools Nepal",
+    "Machinery repair, maintenance, installation support and spare parts from Machinery Tools Nepal in Pokhara.",
+    "/services",
+  ),
+};
 
 export default function ServicesPage() {
   return (

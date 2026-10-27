@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
 import L from "@/components/i18n/L";
 import PageHero from "@/components/sections/PageHero";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import SafeImage from "@/components/ui/SafeImage";
 import { siteImages } from "@/data/siteImages";
 import { company } from "@/data/company";
 
-export const metadata: Metadata = { title: "About | हाम्रो बारे" };
+export const metadata: Metadata = {
+  title: "Machinery Supplier in Pokhara",
+  description:
+    "Meet Machinery Tools Nepal, a machinery and tools supplier based at Baglung Buspark in Pokhara, serving farmers, workshops and businesses in Western Nepal.",
+  alternates: { canonical: "/about" },
+  ...pageSocialMetadata(
+    "Machinery Supplier in Pokhara | Machinery Tools Nepal",
+    "Machinery Tools Nepal helps farmers, workshops and businesses in Western Nepal choose machines, tools and spare parts.",
+    "/about",
+  ),
+};
 
 const points = [
   { en: "Agricultural machinery", ne: "कृषि मेसिनरी" },

@@ -1,9 +1,20 @@
 import type { Metadata } from "next";
 import ProductsExplorer from "@/components/sections/ProductsExplorer";
+import { pageSocialMetadata } from "@/lib/seo/metadata";
 import { getShopProducts } from "@/lib/server/catalog";
 import { productKind, type Kind } from "@/src/lib/search/engine";
 
-export const metadata: Metadata = { title: "Shop" };
+export const metadata: Metadata = {
+  title: "Shop Machinery & Tools in Nepal",
+  description:
+    "Browse machinery, agricultural equipment, power tools and spare parts from Machinery Tools Nepal in Pokhara. Check product details and contact us for price and availability.",
+  alternates: { canonical: "/products" },
+  ...pageSocialMetadata(
+    "Shop Machinery & Tools in Nepal | Machinery Tools Nepal",
+    "Browse machinery, agricultural equipment, power tools and spare parts from Machinery Tools Nepal in Pokhara.",
+    "/products",
+  ),
+};
 export const revalidate = 60;
 
 type SP = { q?: string; category?: string; brand?: string; kind?: string };

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nightly backup. Cron (as deploy user):  15 2 * * * /home/deploy/app/infra/scripts/backup.sh >> /home/deploy/backup.log 2>&1
+# Nightly backup. Cron (as deploy user):  15 2 * * * /home/deploy/bnb-machinery/infra/scripts/backup.sh >> /home/deploy/backup.log 2>&1
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 STAMP=$(date +%Y%m%d-%H%M%S)
