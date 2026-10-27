@@ -1,8 +1,10 @@
 # Production stack for the Contabo VPS. Run from the repo root:
 #   docker compose -f infra/docker-compose.yml --env-file infra/.env.production up -d --build
-name: bnb
+name: bnb-machinery
 services:
   caddy:
+    # Opt in only on a dedicated host where ports 80/443 are free.
+    profiles: [standalone]
     image: caddy:2-alpine
     restart: unless-stopped
     ports: ["80:80", "443:443"]
@@ -33,6 +35,8 @@ services:
       redis: { condition: service_healthy }
       migrate: { condition: service_completed_successfully }
     volumes: [media:/data/media, botdata:/data/bot]
+    # The existing host Caddy can proxy to this loopback-only port on a shared VPS.
+    ports: ["127.0.0.1:${APP_HOST_PORT:-3083}:3000"]
     expose: ["3000"]
     networks: [internal]
     read_only: true
