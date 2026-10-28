@@ -13,8 +13,8 @@ export const ROLE_LABEL: Record<AdminRole, string> = {
 export const isRole = (v: unknown): v is AdminRole => typeof v === "string" && (ROLES as readonly string[]).includes(v);
 
 export type ModuleId =
-  | "dashboard" | "orders" | "reviews" | "quotations" | "customers" | "catalog" | "inventory" | "procurement"
-  | "billing" | "pos" | "service" | "cms" | "analytics" | "automation" | "users" | "audit" | "settings";
+  | "dashboard" | "orders" | "reviews" | "quotations" | "support" | "customers" | "catalog" | "inventory" | "procurement"
+  | "billing" | "pos" | "service" | "cms" | "analytics" | "automation" | "ai" | "users" | "audit" | "settings";
 
 export type AdminModule = { id: ModuleId; label: string; group: string; ready: boolean; roles: readonly AdminRole[]; summary: string; features: string[] };
 
@@ -22,11 +22,13 @@ const SA: AdminRole[] = ["SUPER_ADMIN"];
 const OWN: AdminRole[] = [...SA, "BUSINESS_OWNER"];
 const MGR: AdminRole[] = [...OWN, "MANAGER"];
 const SALES: AdminRole[] = [...MGR, "SALES_MANAGER", "SALES_STAFF"];
+const SUPPORT: AdminRole[] = [...SALES, "SERVICE_MANAGER", "TECHNICIAN"];
 
 export const MODULES: AdminModule[] = [
   { id: "dashboard", label: "Dashboard", group: "Overview", ready: true, roles: ROLES, summary: "Live counts from real data.", features: [] },
   { id: "orders", label: "Orders", group: "Sales", ready: true, roles: [...SALES, "CASHIER"], summary: "Website orders and their status.", features: [] },
-  { id: "quotations", label: "Quotations", group: "Sales", ready: false, roles: SALES, summary: "Quote requests to quotation to sales order.", features: ["Quote requests inbox", "Quotation builder with PDF", "Negotiation history", "Convert accepted quote to sales order"] },
+  { id: "quotations", label: "Quotations", group: "Sales", ready: true, roles: SALES, summary: "Review and track incoming customer quotation requests.", features: ["Retail, wholesale and dealer requests", "Customer contact and delivery district", "Request status and item lines"] },
+  { id: "support", label: "Customer support", group: "Sales", ready: true, roles: SUPPORT, summary: "Review customer chat transcripts and resolve human handoffs.", features: ["Website conversations", "Needs-human queue", "Transcript and resolution status"] },
   { id: "customers", label: "Customers & CRM", group: "Sales", ready: false, roles: SALES, summary: "One profile per customer with full history.", features: ["Retail, wholesale, dealer and business customers", "Leads, follow-ups and tasks", "Customer-specific pricing", "Orders, payments and service history in one profile"] },
   { id: "reviews", label: "Reviews", group: "Sales", ready: true, roles: [...MGR, "SALES_MANAGER"], summary: "Approve or reject customer reviews.", features: [] },
   { id: "catalog", label: "Catalog", group: "Catalog & stock", ready: false, roles: [...MGR, "SALES_MANAGER", "INVENTORY_MANAGER"], summary: "Products, categories, brands, media and prices. Product entry currently lives in the staff inventory portal.", features: ["Products, models, SKUs and part numbers", "Categories and brands", "Images, videos and documents", "Retail, wholesale and sale pricing"] },
@@ -37,6 +39,7 @@ export const MODULES: AdminModule[] = [
   { id: "service", label: "Service & warranty", group: "Operations", ready: false, roles: [...MGR, "SERVICE_MANAGER", "TECHNICIAN"], summary: "Repairs, installation and warranty claims.", features: ["Service requests and technician assignment", "Service quotation and invoice", "Warranty claims", "Service history per machine"] },
   { id: "cms", label: "Website content", group: "Operations", ready: false, roles: [...MGR, "SALES_MANAGER"], summary: "Edit pages, banners and news without code.", features: ["Pages, banners and gallery", "Blog and news", "FAQs", "SEO fields"] },
   { id: "analytics", label: "Analytics", group: "Insights", ready: false, roles: [...MGR, "ACCOUNTANT"], summary: "Real reports from real data.", features: ["Sales and revenue", "Best-selling products", "Inventory value and ageing", "Profitability where accounting data supports it"] },
+  { id: "ai", label: "AI business assistant", group: "Insights", ready: true, roles: [...MGR, "SALES_MANAGER", "SALES_STAFF", "CASHIER", "INVENTORY_MANAGER", "WAREHOUSE_STAFF", "PROCUREMENT_STAFF", "ACCOUNTANT"], summary: "Role-scoped, read-only business agents grounded in invoices, inventory, purchasing and posted journals.", features: ["Live business questions", "Source-backed figures", "Role-scoped data access", "Audited AI requests"] },
   { id: "automation", label: "Automation center", group: "Operations", ready: true, roles: [...MGR, "ACCOUNTANT", "INVENTORY_MANAGER"], summary: "Business workflows, scheduled follow-ups and a monitored delivery queue.", features: ["Order and payment emails", "Inventory reorder alerts", "Customer follow-ups", "Daily sales and collection digest"] },
   { id: "users", label: "Users & roles", group: "Administration", ready: true, roles: SA, summary: "Create staff accounts and assign roles.", features: [] },
   { id: "audit", label: "Audit log", group: "Administration", ready: true, roles: OWN, summary: "Who did what, and when.", features: [] },

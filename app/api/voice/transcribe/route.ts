@@ -17,7 +17,8 @@ export async function POST(request: Request) {
   if (!(file instanceof File) || file.size === 0 || file.size > 5_000_000) {
     return NextResponse.json({ error: "bad_audio" }, { status: 400 });
   }
-  const lang = form.get("lang") === "ne" ? "ne" : "en";
+  const requestedLanguage = form.get("lang");
+  const lang = requestedLanguage === "ne" ? "ne" : requestedLanguage === "hi" ? "hi" : "en";
 
   const fd = new FormData();
   fd.append("file", file, file.name || "voice.webm");
@@ -27,7 +28,9 @@ export async function POST(request: Request) {
     "prompt",
     lang === "ne"
       ? "Machinery Tools Nepal, पावर टिलर, रिपर, कर्न सेलर, चेनसो, इन्जिन, स्पेयर पार्ट्स, पोखरा, बाग्लुङ"
-      : "Machinery Tools Nepal, power tiller, reaper, corn sheller, chainsaw, engine, spare parts, Pokhara, Baglung",
+      : lang === "hi"
+        ? "Machinery Tools Nepal, पावर टिलर, रीपर, कॉर्न शेलर, चेनसॉ, इंजन, स्पेयर पार्ट्स, पोखरा, बागलुंग"
+        : "Machinery Tools Nepal, power tiller, reaper, corn sheller, chainsaw, engine, spare parts, Pokhara, Baglung",
   );
 
   try {

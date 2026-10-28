@@ -16,8 +16,10 @@ export default function StockQuotePicker({ products, initialItem = "" }: Props) 
   const [category, setCategory] = useState("All categories");
   const [brand, setBrand] = useState("All brands");
   const [selected, setSelected] = useState<Record<string, number>>(() => initial ? { [initial.id]: 1 } : {});
-  const [customer, setCustomer] = useState({ name: "", phone: "", note: "" });
+  const [customer, setCustomer] = useState({ name: "", phone: "", note: "", email: "", customerType: "RETAIL", district: "" });
   const [error, setError] = useState("");
+  const [reference, setReference] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const categories = useMemo(() => [...new Set(products.map((p) => p.category))].sort(), [products]);
   const brands = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
@@ -37,14 +39,39 @@ export default function StockQuotePicker({ products, initialItem = "" }: Props) 
     setSelected((current) => ({ ...current, [product.id]: Math.max(0, Math.min(max, qty)) }));
   };
 
-  function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (chosen.length === 0) return setError(tr("Choose at least one in-stock item.", "स्टकमा भएको कम्तीमा एउटा वस्तु छान्नुहोस्।"));
     if (customer.name.trim().length < 2 || customer.phone.replace(/\D/g, "").length < 7) return setError(tr("Enter your name and a valid phone number.", "आफ्नो नाम र मान्य फोन नम्बर राख्नुहोस्।"));
     setError("");
-    const lines = chosen.map((p) => `• ${p.name}${p.model ? ` (${p.model})` : ""} — Qty ${selected[p.id]}${p.price !== null ? ` — ${npr(p.price * selected[p.id])}` : " — please confirm price"}`).join("\n");
-    const message = `Hello Machinery Tools Nepal, please confirm a quotation for these in-stock items:\n\n${lines}\n\nCustomer: ${customer.name.trim()}\nPhone: ${customer.phone.trim()}${customer.note.trim() ? `\nNote: ${customer.note.trim()}` : ""}\n\nKnown item total: ${knownTotal > 0 ? npr(knownTotal) : "price confirmation required"}${unpriced ? ` (${unpriced} line(s) awaiting price)` : ""}. Please confirm the final bill and delivery.`;
-    window.open(`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          customerType: customer.customerType,
+          deliveryDistrict: customer.district,
+          notes: customer.note,
+          items: chosen.map((product) => ({
+            ...( /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(product.id) ? { productId: product.id } : {}),
+            productName: `${product.name}${product.model ? ` (${product.model})` : ""}`,
+            quantity: selected[product.id],
+          })),
+          requestId: crypto.randomUUID(),
+        }),
+      });
+      const result = await response.json() as { reference?: string };
+      if (!response.ok || !result.reference) throw new Error(tr("We could not save the request. Please try again or call our team.", "अनुरोध सुरक्षित गर्न सकिएन। फेरि प्रयास गर्नुहोस् वा फोन गर्नुहोस्।"));
+      setReference(result.reference);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : tr("We could not save the request. Please try again.", "अनुरोध सुरक्षित गर्न सकिएन। फेरि प्रयास गर्नुहोस्।"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const selectClass = "mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100";
@@ -89,6 +116,7 @@ export default function StockQuotePicker({ products, initialItem = "" }: Props) 
 
       <aside className="h-fit space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-28">
         <div><h2 className="text-xl font-black text-slate-950">{tr("Your quote", "तपाईंको कोटेसन")}</h2><p className="mt-1 text-xs text-slate-500">{tr(`${chosen.length} item(s) selected`, `${chosen.length} वस्तु छनोट भयो`)}</p></div>
+        {reference && <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900"><p className="font-bold">{tr("Request received", "अनुरोध प्राप्त भयो")}: {reference}</p><p className="mt-1">{tr("Our team will confirm the current price and delivery.", "हाम्रो टोलीले हालको मूल्य र डेलिभरी पुष्टि गर्नेछ।")}</p><a className="mt-2 inline-flex font-bold underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(`Please follow up on quotation ${reference}.`)}`}>{tr("Continue on WhatsApp", "WhatsApp मा कुरा जारी राख्नुहोस्")}</a></div>}
         {chosen.length ? <ul className="max-h-64 space-y-2 overflow-y-auto">
           {chosen.map((p) => <li key={p.id} className="flex items-start justify-between gap-3 rounded-xl bg-slate-50 p-3 text-sm"><div className="min-w-0"><p className="font-bold">{p.name}</p><p className="mt-0.5 text-xs text-slate-600">Qty {selected[p.id]} · {p.price !== null ? npr(p.price * selected[p.id]) : tr("price to confirm", "मूल्य पुष्टि गर्न बाँकी")}</p></div><button type="button" onClick={() => updateQty(p, 0)} className="text-xs font-bold text-red-600 hover:underline">{tr("Remove", "हटाउनुहोस्")}</button></li>)}
         </ul> : <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">{tr("Choose from products in confirmed stock to build your quotation.", "कोटेसन बनाउन पुष्टि भएको स्टकबाट वस्तु छान्नुहोस्।")}</p>}
@@ -98,11 +126,14 @@ export default function StockQuotePicker({ products, initialItem = "" }: Props) 
         <div className="space-y-3 border-t border-slate-200 pt-4">
           <label className="block text-sm font-semibold text-slate-700">{tr("Your name", "तपाईंको नाम")}<input className={inputClass} autoComplete="name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} required /></label>
           <label className="block text-sm font-semibold text-slate-700">{tr("Phone / WhatsApp", "फोन / WhatsApp")}<input className={inputClass} autoComplete="tel" inputMode="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} required /></label>
+          <label className="block text-sm font-semibold text-slate-700">{tr("Customer type", "ग्राहकको प्रकार")}<select className={selectClass} value={customer.customerType} onChange={(e) => setCustomer({ ...customer, customerType: e.target.value })}><option value="RETAIL">{tr("Retail", "खुद्रा")}</option><option value="WHOLESALE">{tr("Wholesale", "थोक")}</option><option value="DEALER">{tr("Dealer", "डिलर")}</option><option value="BUSINESS">{tr("Business", "व्यवसाय")}</option></select></label>
+          <label className="block text-sm font-semibold text-slate-700">{tr("Delivery district", "डेलिभरी जिल्ला")}<input className={inputClass} autoComplete="address-level2" value={customer.district} onChange={(e) => setCustomer({ ...customer, district: e.target.value })} placeholder={tr("Anywhere in Nepal", "नेपालभरि")}/></label>
+          <label className="block text-sm font-semibold text-slate-700">{tr("Email (optional)", "इमेल (ऐच्छिक)")}<input className={inputClass} type="email" autoComplete="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></label>
           <label className="block text-sm font-semibold text-slate-700">{tr("Note (optional)", "टिप्पणी (ऐच्छिक)")}<textarea className={inputClass} rows={2} maxLength={300} value={customer.note} onChange={(e) => setCustomer({ ...customer, note: e.target.value })} /></label>
         </div>
         {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{error}</p>}
-        <button type="submit" disabled={!chosen.length} className="w-full rounded-xl bg-emerald-600 px-5 py-4 font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">{tr("Send quote request on WhatsApp →", "WhatsApp मा कोटेसन पठाउनुहोस् →")}</button>
-        <p className="text-[11px] leading-5 text-slate-500">{tr("Your request opens in WhatsApp for you to review and send. Never share your payment PIN or OTP.", "तपाईंले समीक्षा गरी पठाउन WhatsApp खुल्छ। भुक्तानी PIN वा OTP कसैलाई नदिनुहोस्।")}</p>
+        <button type="submit" disabled={!chosen.length || submitting || !!reference} className="w-full rounded-xl bg-emerald-600 px-5 py-4 font-extrabold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">{submitting ? tr("Sending…", "पठाउँदै…") : reference ? tr("Request submitted", "अनुरोध पठाइयो") : tr("Submit quotation request", "कोटेसन अनुरोध पठाउनुहोस्")}</button>
+        <p className="text-[11px] leading-5 text-slate-500">{tr("Your request is saved so our team can respond. Prices and stock will be confirmed before you order. Never share your payment PIN or OTP.", "हाम्रो टोलीले जवाफ दिन अनुरोध सुरक्षित हुन्छ। अर्डर अघि मूल्य र स्टक पुष्टि गरिनेछ। भुक्तानी PIN वा OTP नदिनुहोस्।")}</p>
       </aside>
     </form>
   );

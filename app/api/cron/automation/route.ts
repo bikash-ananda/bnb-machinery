@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { runAutomationCycle } from "@/src/modules/automation/engine";
+import { deleteExpiredSupportConversations } from "@/src/modules/support/service";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,8 @@ function authorized(request: Request) {
 export async function POST(request: Request) {
   if (!authorized(request)) return Response.json({ error: "Not authorized." }, { status: 401 });
   try {
-    return Response.json({ ok: true, ...(await runAutomationCycle()) });
+    const expiredSupportConversations = await deleteExpiredSupportConversations();
+    return Response.json({ ok: true, expiredSupportConversations, ...(await runAutomationCycle()) });
   } catch (error) {
     console.error("scheduled automation cycle failed", error);
     return Response.json({ error: "Automation cycle failed." }, { status: 503 });

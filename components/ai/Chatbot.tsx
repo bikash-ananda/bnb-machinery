@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 import { company } from "@/data/company";
@@ -14,7 +14,8 @@ import { cartCount, setDrawer, useShop } from "@/lib/shop/store";
 import { npr } from "@/lib/shop/types";
 import type { SearchHit } from "@/src/lib/search/engine";
 
-type Message = { id: number; role: "assistant" | "user"; reply?: Reply; content?: string; hits?: SearchHit[] };
+type Message = { id: number; role: "assistant" | "user"; reply?: Reply; content?: string; hits?: SearchHit[]; serverId?: string; staff?: boolean };
+type StoredMessage = { id: string; role: "USER" | "ASSISTANT" | "STAFF"; content: string };
 
 type RecResult = { isFinal: boolean; 0: { transcript: string } };
 type RecEvent = { resultIndex: number; results: ArrayLike<RecResult> };
@@ -38,11 +39,20 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const SILENT = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
 const STORE = "bnb-chat-v4";
+const createRequestId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.floor(Math.random() * 16);
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+};
 
 export default function Chatbot() {
   const pathname = usePathname();
   const { language, setLanguage } = useLanguage();
   const lang: Lang = language === "ne" ? "ne" : "en";
+  const [languageOverride, setLanguageOverride] = useState<Lang | null>(null);
+  const assistantLanguage = languageOverride ?? lang;
 
   const micOk = useSyncExternalStore(noopSub, () => getSR() !== null, () => false);
   const ttsOk = useSyncExternalStore(noopSub, () => "speechSynthesis" in window, () => false);
@@ -80,7 +90,7 @@ export default function Chatbot() {
   const noSpeech = useRef(0);
   const callRef = useRef(false);
   const speakRef = useRef(false);
-  const langRef = useRef<Lang>(lang);
+  const langRef = useRef<Lang>(assistantLanguage);
   const sendRef = useRef<(t: string) => void>(() => {});
   const aiState = useRef<"on" | "off">("on");
   const serverVoice = useRef<"on" | "off">("on");
@@ -88,8 +98,39 @@ export default function Chatbot() {
   const recCleanup = useRef<(() => void) | null>(null);
   const finishRec = useRef<(() => void) | null>(null);
 
+  const refreshSupportHistory = useCallback(async () => {
+    if (busy.current) return;
+    try {
+      const response = await fetch(`/api/support/messages?lang=${assistantLanguage}`, { cache: "no-store" });
+      if (!response.ok) return;
+      const data = await response.json() as { messages?: StoredMessage[] };
+      if (!Array.isArray(data.messages) || data.messages.length === 0) return;
+      setMessages((current) => {
+        const unmatched = [...current];
+        const restored = data.messages!.map((stored) => {
+          const role = stored.role === "USER" ? "user" : "assistant";
+          const existingIndex = unmatched.findIndex((message) =>
+            message.role === role && (message.content ?? message.reply?.text ?? "") === stored.content,
+          );
+          const existing = existingIndex >= 0 ? unmatched.splice(existingIndex, 1)[0] : undefined;
+          return {
+            ...(existing ?? { id: idRef.current++ }),
+            role,
+            content: existing?.content ?? stored.content,
+            serverId: stored.id,
+            staff: stored.role === "STAFF",
+          } satisfies Message;
+        });
+        idRef.current = Math.max(idRef.current, ...restored.map((message) => message.id + 1));
+        return restored;
+      });
+    } catch {
+      // The local chat remains usable if conversation history is temporarily unavailable.
+    }
+  }, [assistantLanguage]);
+
   useEffect(() => {
-    langRef.current = lang;
+    langRef.current = assistantLanguage;
     speakRef.current = speakOn;
     sendRef.current = send;
   });
@@ -108,6 +149,14 @@ export default function Chatbot() {
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    const refresh = () => { if (active) void refreshSupportHistory(); };
+    refresh();
+    const interval = window.setInterval(refresh, 12_000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [open, refreshSupportHistory]);
   useEffect(() => () => {
     recId.current++;
     recCleanup.current?.();
@@ -131,19 +180,19 @@ export default function Chatbot() {
     const myId = ++speechId.current;
     synth.cancel();
     const voices = synth.getVoices();
-    const prefs = l === "ne" ? ["ne", "hi"] : ["en-in", "en-us", "en-gb", "en"];
+    const prefs = l === "ne" ? ["ne", "hi"] : l === "hi" ? ["hi", "en-in", "en-us"] : ["en-in", "en-us", "en-gb", "en"];
     let voice: SpeechSynthesisVoice | undefined;
     for (const p of prefs) {
       voice = voices.find((v) => v.lang.toLowerCase().replace("_", "-").startsWith(p));
       if (voice) break;
     }
-    if (l === "ne" && voices.length > 0 && !voice) {
-      setNote("यो उपकरणमा नेपाली आवाज छैन, त्यसैले उत्तर लेखिएर मात्र देखिन्छ।");
+    if (l !== "en" && voices.length > 0 && !voice) {
+      setNote(l === "hi" ? "Hindi voice is unavailable on this device; the answer is still shown as text." : "यो उपकरणमा नेपाली आवाज छैन, त्यसैले उत्तर लेखिएर मात्र देखिन्छ।");
       onDone?.();
       return;
     }
     const u = new SpeechSynthesisUtterance(text);
-    if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = l === "ne" ? "ne-NP" : "en-US"; }
+    if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = l === "ne" ? "ne-NP" : l === "hi" ? "hi-IN" : "en-US"; }
     u.rate = 0.95;
     u.onstart = () => { if (myId === speechId.current) setStatus("speaking"); };
     const done = () => {
@@ -317,7 +366,7 @@ export default function Chatbot() {
     try { window.speechSynthesis?.cancel(); } catch {}
 
     const rec = new SR();
-    rec.lang = langRef.current === "ne" ? "ne-NP" : "en-US";
+    rec.lang = langRef.current === "ne" ? "ne-NP" : langRef.current === "hi" ? "hi-IN" : "en-US";
     rec.interimResults = true;
     rec.continuous = false;
     let finalText = "";
@@ -411,21 +460,22 @@ export default function Chatbot() {
   }
 
   /* ---------- chat ---------- */
-  async function askAI(history: { role: string; content: string }[], l: Lang): Promise<Reply | null> {
+  async function askAI(history: { role: string; content: string }[], l: Lang, requestId: string): Promise<Reply | null> {
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang: l, messages: history }),
+        body: JSON.stringify({ lang: l, messages: history, requestId }),
       });
       if (res.status === 503) { aiState.current = "off"; return null; }
       if (!res.ok) return null;
-      const d = (await res.json()) as { text?: string; handoff?: boolean; sources?: { title: string; url: string }[] };
+      const d = (await res.json()) as { text?: string; handoff?: boolean; sources?: { title: string; url: string }[]; products?: SearchHit[] };
       if (!d.text) return null;
       const asked = (history[history.length - 1]?.content ?? "").slice(0, 200);
       const waHref = `https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(d.handoff ? "Hello B & B Machinery, I need help: " + asked : "Hello B & B Machinery")}`;
       return {
         text: d.text,
+        products: Array.isArray(d.products) ? d.products.slice(0, 3) : [],
         links: [
           ...(d.handoff
           ? [
@@ -433,7 +483,7 @@ export default function Chatbot() {
               { label: T(l, "☎ Call now", "☎ अहिले फोन गर्नुहोस्"), href: `tel:${company.contact.phoneRaw}`, external: true },
             ]
           : [
-              { label: T(l, "Get a quote →", "कोटेसन लिनुहोस् →"), href: "/contact" },
+              { label: T(l, "Get a quote →", "कोटेसन लिनुहोस् →"), href: "/get-a-quote" },
               { label: T(l, "💬 Ask our team", "💬 टोलीलाई सोध्नुहोस्"), href: waHref, external: true },
             ]),
           ...(d.sources ?? []).slice(0, 3).map((source) => ({ label: `Source: ${source.title}`, href: source.url, external: true })),
@@ -445,9 +495,9 @@ export default function Chatbot() {
     }
   }
 
-  function afterReply(reply: Reply) {
+  function afterReply(reply: Reply, replyLanguage: Lang) {
     if (speakRef.current || callRef.current) {
-      const l: Lang = hasDevanagari(reply.text) ? "ne" : "en";
+      const l: Lang = replyLanguage === "hi" ? "hi" : hasDevanagari(reply.text) ? "ne" : "en";
       speak(speakable(reply), l, () => { if (callRef.current) startListening(); });
     } else {
       setStatus("idle");
@@ -458,31 +508,49 @@ export default function Chatbot() {
     const msg = text.trim().slice(0, 300);
     if (!msg || busy.current) return;
     busy.current = true;
-    const replyLang: Lang = hasDevanagari(msg) ? "ne" : lang;
+    const detectedDevanagari: Lang = /(?:है|हूँ|मुझे|चाहिए|कैसे|कितना|मेरा|आपका|करें)/u.test(msg) ? "hi" : "ne";
+    const replyLang: Lang = hasDevanagari(msg) ? (languageOverride ?? detectedDevanagari) : assistantLanguage;
+    const localLang: Lang = replyLang === "ne" ? "ne" : "en";
+    const requestId = createRequestId();
     const userMsg: Message = { id: idRef.current++, role: "user", content: msg };
     setMessages((m) => [...m, userMsg]);
     setInput("");
     setTyping(true);
     if (callRef.current) setStatus("thinking");
 
-    const local = respond(msg, flow, replyLang);
+    const local = respond(msg, flow, localLang);
     let reply = local.reply;
     let nextFlow = local.flow;
-    if (needsAI(msg, flow) && aiState.current !== "off") {
+    let savedByAI = false;
+    if ((replyLang === "hi" || needsAI(msg, flow)) && aiState.current !== "off") {
       const history = [...messages, userMsg]
         .slice(-8)
         .map((m) => ({ role: m.role, content: m.content ?? m.reply?.text ?? "" }))
         .filter((m) => m.content);
-      const ai = await askAI(history, replyLang);
-      if (ai) { reply = ai; nextFlow = null; } else { await sleep(200); }
+      const ai = await askAI(history, replyLang, requestId);
+      if (ai) { reply = ai; nextFlow = null; savedByAI = true; } else { await sleep(200); }
     } else {
       await sleep(350);
     }
+    if (!savedByAI) {
+      const handoff = reply.links?.some((link) => link.href.startsWith("tel:") || link.href.includes("wa.me")) ?? false;
+      await fetch("/api/support/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          language: replyLang,
+          requestId,
+          user: msg,
+          assistant: speakable(reply),
+          handoff,
+        }),
+      }).catch(() => undefined);
+    }
     setFlow(nextFlow);
-    setMessages((m) => [...m, { id: idRef.current++, role: "assistant", reply }]);
+    setMessages((m) => [...m, { id: idRef.current++, role: "assistant", reply, hits: reply.products }]);
     setTyping(false);
     busy.current = false;
-    afterReply(reply);
+    afterReply(reply, replyLang);
   }
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -593,8 +661,9 @@ export default function Chatbot() {
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
               <div className="mr-1 flex overflow-hidden rounded-full border border-white/25 text-[11px] font-bold" role="group" aria-label="Language">
-                <button type="button" onClick={() => setLanguage("en")} aria-pressed={lang === "en"} className={`px-2 py-1 ${lang === "en" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>EN</button>
-                <button type="button" onClick={() => setLanguage("ne")} aria-pressed={lang === "ne"} className={`px-2 py-1 ${lang === "ne" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>{"\u0928\u0947"}</button>
+                <button type="button" onClick={() => { setLanguageOverride("en"); setLanguage("en"); }} aria-pressed={assistantLanguage === "en"} className={`px-1.5 py-1 ${assistantLanguage === "en" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>EN</button>
+                <button type="button" onClick={() => { setLanguageOverride("ne"); setLanguage("ne"); }} aria-pressed={assistantLanguage === "ne"} className={`px-1.5 py-1 ${assistantLanguage === "ne" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>{"\u0928\u0947"}</button>
+                <button type="button" onClick={() => setLanguageOverride("hi")} aria-pressed={assistantLanguage === "hi"} className={`px-1.5 py-1 ${assistantLanguage === "hi" ? "bg-amber-400 text-slate-950" : "text-slate-200"}`}>HI</button>
               </div>
               <button type="button" onClick={toggleSpeak} aria-pressed={speakOn} title={T(lang, "Read answers aloud", "उत्तर सुनाउनुहोस्")} aria-label={T(lang, "Read answers aloud", "उत्तर सुनाउनुहोस्")} className={hdrBtn}>
                 {speakOn ? "\u{1F50A}" : "\u{1F507}"}
@@ -635,18 +704,20 @@ export default function Chatbot() {
             {messages.map((m) => (
               <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[88%] whitespace-pre-line rounded-2xl px-4 py-3 text-sm leading-6 ${m.role === "user" ? "rounded-br-md bg-[var(--brand-primary)] text-white" : "rounded-bl-md border border-[var(--border)] bg-white text-slate-800"}`}>
+                  {m.staff && <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">{T(lang, "B&B team", "बी एन्ड बी टोली")}</p>}
                   {m.content ?? m.reply?.text}
                   {m.hits && m.hits.length > 0 && (
                     <ul className="mt-3 space-y-2">
                       {m.hits.slice(0, 4).map((h) => (
-                        <li key={h.id}>
-                          <Link href={`/products/${h.slug}`} onClick={closeChat} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 text-slate-900 hover:border-[var(--brand-accent)]">
+                        <li key={h.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2">
+                          <Link href={`/products/${h.slug}`} onClick={closeChat} className="flex items-center gap-3 text-slate-900 hover:text-[var(--brand-primary)]">
                             <SafeImage src={h.image} alt="" className="h-12 w-12 shrink-0 rounded-md" />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-xs font-bold">{h.name}</span>
                               <span className="block text-[11px] text-slate-500">{h.price !== null ? npr(h.price) : T(lang, "Price on request", "मूल्य सोध्नुहोस्")}</span>
                             </span>
                           </Link>
+                          <Link href={`/contact?item=${encodeURIComponent(h.name)}`} onClick={closeChat} className="mt-2 inline-flex min-h-8 items-center rounded-full border border-amber-300 px-3 text-[11px] font-bold text-slate-900 hover:bg-amber-50">{T(lang, "Request a quote", "कोटेसन माग्नुहोस्")}</Link>
                         </li>
                       ))}
                     </ul>
@@ -715,6 +786,9 @@ export default function Chatbot() {
                 {T(lang, "Send", "पठाउनु")}
               </button>
             </form>
+            <p className="mt-2 px-1 text-[10px] leading-4 text-slate-500">
+              {T(lang, "Messages may be saved so our team can follow up. Never share passwords, payment PINs or OTPs.", "हाम्रो टोलीले पछि सहयोग गर्न सकोस् भनेर सन्देश सुरक्षित हुन सक्छन्। पासवर्ड, भुक्तानी PIN वा OTP नपठाउनुहोस्।")}
+            </p>
           </div>
         </section>
       )}

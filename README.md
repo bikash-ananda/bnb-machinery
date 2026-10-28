@@ -14,6 +14,13 @@ This repository is the existing B & B Machinery website plus a staff inventory w
 
 There is no registration, password login, or social login. The inventory editor address is fixed in server code. A second email can only receive the OWNER role when the single OWNER_EMAIL environment variable is configured; leave it empty until the owner address is confirmed. No arbitrary account list is accepted.
 
+## Admin AI assistant
+
+The protected `/admin/ai` workspace provides role-scoped Business, Sales, Inventory, Purchasing and Accounting agents. The agents use read-only server tools over the existing invoice, stock, purchase and journal records; source-backed figures are displayed separately from the model's explanation. User chat text is not persisted. Each request records the actor, agent, source/tool names, a one-way question hash, provider/model, token usage, latency and any configured cost estimate in the existing admin audit log.
+
+Configure the provider on the server with `AI_PROVIDER`, `AI_MODEL` and its API key. The model timeout, output-token cap, compatible-provider temperature and per-IP request limit are configurable with `AI_TIMEOUT_MS`, `AI_MAX_OUTPUT_TOKENS`, `AI_TEMPERATURE` and `AI_RATE_LIMIT_PER_MINUTE`. Supported providers are OpenAI, DeepSeek, Anthropic and OpenAI-compatible APIs. `AI_FALLBACK_*` settings can provide one fallback. Existing `OPENAI_API_KEY` and `OPENAI_MODEL` remain supported for the primary OpenAI provider. Never expose credentials through `NEXT_PUBLIC_` variables. Optional per-provider token rates enable approximate USD cost tracking; without rates the cost is shown as unknown. See [AI agent architecture](docs/AI_AGENT_ARCHITECTURE.md) for the data boundaries, role matrix and known reporting limits. Track the remaining AI roadmap and verification status in [implementation status](docs/IMPLEMENTATION_STATUS.md).
+
+The first AI build is intentionally read-only. It cannot place orders, change stock or prices, post accounting entries, issue refunds or send messages. Product-level historical profit is not reported because invoices do not retain a cost-at-sale snapshot. Outstanding balances are ledger totals; overdue status cannot be determined without due dates. No deployment is part of this build.
 ## Services to configure
 
 The repository does not contain a database, email sender, storage account, owner address, or API credentials. The workflow fails closed until its server environment is configured.
@@ -24,7 +31,7 @@ The repository does not contain a database, email sender, storage account, owner
 4. Configure Resend with a verified sender and set RESEND_API_KEY and OTP_FROM_EMAIL.
 5. Generate a unique OTP_HASH_SECRET with at least 32 characters. For example, run: node -p "require('node:crypto').randomBytes(32).toString('hex')" in a trusted terminal.
 6. Set OWNER_EMAIL only after the owner account is confirmed. It must be a single address; no default owner account is created.
-7. To enable AI suggestions, configure a server-side OPENAI_API_KEY and OPENAI_MODEL that supports image inputs. Without both values, uploads remain available for manual review. AI results stay unverified. See the official image input guide: https://developers.openai.com/api/docs/guides/images-vision
+7. To enable existing image identification, configure a server-side OPENAI_API_KEY and OPENAI_MODEL that supports image inputs. Without both values, uploads remain available for manual review. AI results stay unverified. See the official image input guide: https://developers.openai.com/api/docs/guides/images-vision
 
 The upload endpoint accepts up to five JPG, PNG, or WebP images, with a 10 MB limit per image and a 25 MB combined limit. The hosting platform must allow requests large enough for that combined upload size.
 
@@ -36,8 +43,7 @@ Set APP_ORIGIN=http://localhost:3000 for local same-origin checks. To exercise O
 
 ## Checks
 
+- pnpm test
 - pnpm lint
 - pnpm exec tsc --noEmit
 - pnpm build
-
-There is no test script or existing test suite in the package manifest.
