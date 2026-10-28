@@ -32,11 +32,20 @@ export const notices: Notice[] = [
     id: "showroom",
     kind: "offer",
     enabled: true,
-    title: { en: "Visit our showroom", ne: "हाम्रो शोरुममा आउनुहोस्" },
-    text: {
-      en: "See machines before you buy: Baglung Buspark, Pokhara. Edit this card in config/notices.ts to show your real offers.",
-      ne: "किन्नुअघि मेसिन आफैँ हेर्नुहोस्: बाग्लुङ बसपार्क, पोखरा। आफ्ना वास्तविक अफर देखाउन config/notices.ts मा यो कार्ड सम्पादन गर्नुहोस्।",
+    title: {
+      en: "🎉 Happy Tihar & Deepawali!",
+      ne: "शुभ तिहार तथा दीपावली!",
     },
-    link: { href: "/location", label: { en: "Get directions →", ne: "बाटो हेर्नुहोस् →" } },
+    text: {
+      en: "May this Tihar and Deepawali bring happiness, prosperity, good health and success to you and your family. Visit our showroom at Baglung Buspark, Pokhara.",
+      ne: "यो तिहार तथा दीपावलीले तपाईं र तपाईंको परिवारमा सुख, समृद्धि, सुस्वास्थ्य र सफलता ल्याओस्। बाग्लुङ बसपार्क, पोखरास्थित हाम्रो शोरुममा आउनुहोस्।",
+    },
+    link: {
+      href: "/location",
+      label: {
+        en: "Visit our showroom →",
+        ne: "हाम्रो शोरुममा आउनुहोस् →",
+      },
+    },
   },
 ];
