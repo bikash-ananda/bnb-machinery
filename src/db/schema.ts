@@ -5,3 +5,5 @@ export * from "../modules/sales/schema";
 export * from "../modules/accounting/schema";
 export * from "../modules/purchasing/schema";
 export * from "../modules/automation/schema";
+export * from "../modules/local-workflow/schema";
+export * from "../modules/support/schema";

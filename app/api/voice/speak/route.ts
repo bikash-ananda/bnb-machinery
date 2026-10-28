@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   try { body = await request.json(); } catch { return NextResponse.json({ error: "bad_request" }, { status: 400 }); }
   const text = typeof body.text === "string" ? body.text.trim().slice(0, 700) : "";
   if (!text) return NextResponse.json({ error: "bad_request" }, { status: 400 });
-  const lang = body.lang === "ne" ? "Nepali" : "English";
+  const lang = body.lang === "ne" ? "Nepali" : body.lang === "hi" ? "Hindi" : "English";
 
   const model = process.env.OPENAI_TTS_MODEL?.trim() || "gpt-4o-mini-tts";
   const payload: Record<string, unknown> = {

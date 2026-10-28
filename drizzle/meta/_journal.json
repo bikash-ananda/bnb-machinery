@@ -43,6 +43,20 @@
       "when": 1792082305630,
       "tag": "0005_steady_machinery_automation",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793199983649,
+      "tag": "0006_natural_ultragirl",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793200562226,
+      "tag": "0007_dapper_komodo",
+      "breakpoints": true
     }
   ]
 }

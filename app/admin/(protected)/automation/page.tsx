@@ -6,17 +6,28 @@ export const metadata = { title: "Automation center" };
 
 export default async function AutomationPage() {
   await requireAdmin("automation");
-  try {
-    const [rules, metrics, activity] = await Promise.all([
-      listAutomationRules(), getAutomationMetrics(), getAutomationActivity(),
-    ]);
-    return <AutomationConsole
-      databaseReady
-      rules={rules.map((rule) => ({ code: rule.code, area: rule.area, name: rule.name, description: rule.description, trigger: rule.trigger, enabled: rule.enabled }))}
-      metrics={metrics}
-      activity={activity}
-    />;
-  } catch {
+
+  const data = await Promise.all([
+    listAutomationRules(),
+    getAutomationMetrics(),
+    getAutomationActivity(),
+  ]).then(([rules, metrics, activity]) => ({ rules, metrics, activity })).catch(() => null);
+
+  if (!data) {
     return <AutomationConsole databaseReady={false} rules={[]} metrics={null} activity={{ events: [], messages: [] }} />;
   }
+
+  return <AutomationConsole
+    databaseReady
+    rules={data.rules.map((rule) => ({
+      code: rule.code,
+      area: rule.area,
+      name: rule.name,
+      description: rule.description,
+      trigger: rule.trigger,
+      enabled: rule.enabled,
+    }))}
+    metrics={data.metrics}
+    activity={data.activity}
+  />;
 }

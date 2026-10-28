@@ -1,11 +1,12 @@
 import { company } from "@/data/company";
+import type { SearchHit } from "@/src/lib/search/engine";
 import { products, type Product } from "@/data/products";
 import { services } from "@/data/services";
 import { topics } from "@/lib/chat/knowledge";
 
-export type Lang = "en" | "ne";
+export type Lang = "en" | "ne" | "hi";
 export type ChatLink = { label: string; href: string; external?: boolean };
-export type Reply = { text: string; links?: ChatLink[]; chips?: string[] };
+export type Reply = { text: string; links?: ChatLink[]; chips?: string[]; products?: SearchHit[] };
 export type Flow = null | { step: "item" | "name" | "phone"; item?: string; name?: string };
 export type Result = { reply: Reply; flow: Flow };
 

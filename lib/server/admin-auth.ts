@@ -107,11 +107,14 @@ export async function revokeUserSessions(userId: string, exceptHash?: string) {
   });
 }
 
-export async function logAudit(actor: { email: string; role: string } | null, action: string, entity: string, entityId: string, detail: unknown, request?: Request) {
+export async function logAudit(actor: { email: string; role: string } | null, action: string, entity: string, entityId: string, detail: unknown, request?: Request, mustSucceed = false) {
   try {
     await dbRequest("admin_audit_events", {
       method: "POST", headers: { prefer: "return=minimal" },
       body: JSON.stringify({ actor_email: actor?.email ?? null, actor_role: actor?.role ?? null, action, entity, entity_id: entityId, detail: detail ?? null, ip: request ? clientIp(request) : null }),
     });
-  } catch { /* auditing must never break the action itself */ }
+  } catch (error) {
+    if (mustSucceed) throw error;
+    /* auditing must never break the action itself */
+  }
 }
