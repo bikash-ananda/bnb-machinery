@@ -17,7 +17,7 @@ jobs:
   deploy:
     name: Deploy production
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Deploy over pinned SSH
         env:
@@ -34,14 +34,15 @@ jobs:
           : "${VPS_KNOWN_HOSTS:?Missing repository secret VPS_KNOWN_HOSTS}"
 
           install -m 700 -d "$HOME/.ssh"
-          printf '%s\n' "$VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\\n' "$VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-          ssh -i "$HOME/.ssh/id_ed25519" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o ConnectTimeout=15 \
-            "$VPS_USER@$VPS_HOST" deploy
+          ssh -i "$HOME/.ssh/id_ed25519" \\
+            -o BatchMode=yes \\
+            -o IdentitiesOnly=yes \\
+            -o StrictHostKeyChecking=yes \\
+            -o ConnectTimeout=15 \\
+            "$VPS_USER@$VPS_HOST" \\
+            'cd /opt/bnb-machinery && git fetch --prune origin main && git checkout -B main origin/main && git reset --hard origin/main && bash infra/scripts/deploy-production.sh'
