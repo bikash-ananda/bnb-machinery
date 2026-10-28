@@ -231,7 +231,7 @@ async function enqueueScheduledEvents() {
     let scheduled = 0;
     const paymentDueEvents = aliasedTable(automationEvents, "payment_due_events");
     const oldOrders = await tx.select({ id: orders.id }).from(orders)
-      .leftJoin(paymentDueEvents, and(eq(paymentDueEvents.eventType, "PAYMENT_DUE"), eq(paymentDueEvents.aggregateId, orders.id)))
+      .leftJoin(paymentDueEvents, and(eq(paymentDueEvents.eventType, "PAYMENT_DUE"), eq(paymentDueEvents.aggregateId, sql`${orders.id}::text`)))
       .where(and(inArray(orders.paymentStatus, ["UNPAID", "PARTIAL"]), notInArray(orders.status, ["CANCELLED"]), lte(orders.createdAt, new Date(Date.now() - DAY_MS)), isNull(paymentDueEvents.id)))
       .orderBy(asc(orders.createdAt)).limit(100);
     for (const order of oldOrders) {
