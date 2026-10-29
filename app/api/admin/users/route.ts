@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isRole, type AdminRole } from "@/lib/admin/access";
+import { canChangeAdminRole, canCreateAdminRole, canManageAdminTarget, protectsLastActiveSuperAdminFromDeactivation, protectsLastActiveSuperAdminFromDemotion } from "@/lib/admin/user-management";
 import { adminApi, fail, UUID } from "@/lib/server/admin-api";
 import { generateTempPassword, hashPassword, logAudit, normalizeEmail, revokeUserSessions } from "@/lib/server/admin-auth";
 import { dbRequest } from "@/lib/server/supabase";
@@ -13,14 +14,6 @@ async function findTarget(id: string) {
     "admin_users?select=id,role,active&id=eq." + encodeURIComponent(id) + "&limit=1",
   );
   return rows[0] ?? null;
-}
-
-function canManageTarget(actorRole: AdminRole, targetRole: string) {
-  // Business owners can manage staff, but never privileged owner or Super Admin accounts.
-  if (actorRole === "BUSINESS_OWNER") {
-    return targetRole !== "SUPER_ADMIN" && targetRole !== "BUSINESS_OWNER";
-  }
-  return actorRole === "SUPER_ADMIN";
 }
 
 export async function POST(request: Request) {
@@ -40,11 +33,11 @@ export async function POST(request: Request) {
     return fail("Enter a full email, a name and a valid role.");
   }
 
-  if (g.session.role !== "SUPER_ADMIN" && g.session.role !== "BUSINESS_OWNER") {
-    return fail("Not allowed.", 403);
-  }
-  if (g.session.role === "BUSINESS_OWNER" && (b.role === "SUPER_ADMIN" || b.role === "BUSINESS_OWNER")) {
-    return fail("Business Owners can create staff accounts, but cannot create privileged accounts.", 403);
+  if (!canCreateAdminRole(g.session.role, b.role)) {
+    if (g.session.role === "BUSINESS_OWNER" && (b.role === "SUPER_ADMIN" || b.role === "BUSINESS_OWNER")) {
+      return fail("Business Owners can create staff accounts, but cannot create privileged accounts.", 403);
+    }
+    return fail("Not allowed to create an account with that role.", 403);
   }
 
   const tempPassword = generateTempPassword();
@@ -91,20 +84,20 @@ export async function PATCH(request: Request) {
     const target = await findTarget(b.id);
     if (!target) return fail("Account not found.", 404);
     if (!isRole(target.role)) return fail("The target account has an invalid role. Contact the Super Admin.", 409);
-    if (!canManageTarget(g.session.role, target.role)) {
+    if (!canManageAdminTarget(g.session.role, target.role as AdminRole)) {
       return fail("You do not have permission to manage this privileged account.", 403);
     }
 
     if (b.action === "set-role") {
-      if (g.session.role !== "SUPER_ADMIN") {
+      if (!canChangeAdminRole(g.session.role)) {
         return fail("Only the Super Admin can grant or revoke roles.", 403);
       }
       if (!isRole(b.role)) return fail("Choose a valid role.");
-      if (target.role === "SUPER_ADMIN" && b.role !== "SUPER_ADMIN" && target.active) {
+      if (target.active && target.role === "SUPER_ADMIN" && b.role !== "SUPER_ADMIN") {
         const activeAdmins = await dbRequest<{ id: string }[]>(
           "admin_users?select=id&role=eq.SUPER_ADMIN&active=eq.true&limit=2",
         );
-        if (activeAdmins.length <= 1) {
+        if (protectsLastActiveSuperAdminFromDemotion(target.role as AdminRole, target.active, b.role, activeAdmins.length)) {
           return fail("The last active Super Admin cannot lose Super Admin privileges.", 409);
         }
       }
@@ -120,11 +113,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: true, role: b.role });
     }
 
-    if (b.action === "deactivate" && target.role === "SUPER_ADMIN") {
+    if (b.action === "deactivate" && target.active && target.role === "SUPER_ADMIN") {
       const activeAdmins = await dbRequest<{ id: string }[]>(
         "admin_users?select=id&role=eq.SUPER_ADMIN&active=eq.true&limit=2",
       );
-      if (activeAdmins.length <= 1) {
+      if (protectsLastActiveSuperAdminFromDeactivation(target.role as AdminRole, target.active, activeAdmins.length)) {
         return fail("The last active Super Admin cannot be deactivated.", 409);
       }
     }
