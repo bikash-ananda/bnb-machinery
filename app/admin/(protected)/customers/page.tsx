@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
   await requireAdmin("customers");
-  let rows: Awaited<ReturnType<typeof db.select>> | null = null;
+  let rows: {id:string;name:string;code:string|null;phone:string|null;email:string|null;type:string;district:string|null;panNo:string|null;creditLimitPaisa:bigint;createdAt:Date}[] | null = null;
   let error = false;
   try {
     rows = await db.select().from(customers).orderBy(desc(customers.createdAt)).limit(250);
