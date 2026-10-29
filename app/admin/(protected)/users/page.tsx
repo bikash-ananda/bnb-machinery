@@ -10,7 +10,7 @@ export default async function UsersPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-black text-slate-950">Users & roles</h1>
-      {rows === null ? <p className="rounded-2xl bg-amber-50 p-5 text-sm font-semibold text-amber-900">Users could not be loaded.</p> : <UsersManager initial={rows} selfId={s.userId} />}
+      {rows === null ? <p className="rounded-2xl bg-amber-50 p-5 text-sm font-semibold text-amber-900">Users could not be loaded.</p> : <UsersManager initial={rows} selfId={s.userId} actorRole={s.role} />}
     </div>
   );
 }
