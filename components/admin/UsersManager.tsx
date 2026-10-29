@@ -5,7 +5,7 @@ import { ROLES, ROLE_LABEL, type AdminRole } from "@/lib/admin/access";
 
 export type AdminUserRow = { id: string; email: string; name: string; role: AdminRole; active: boolean; must_change_password: boolean; last_login_at: string | null };
 
-type ApiResponse = { ok?: boolean; error?: string; tempPassword?: string };
+type ApiResponse = { ok?: boolean; error?: string; tempPassword?: string; role?: AdminRole };
 
 export default function UsersManager({
   initial,
@@ -23,6 +23,7 @@ export default function UsersManager({
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
+  const [roleChanges, setRoleChanges] = useState<Record<string, AdminRole>>({});
 
   const assignableRoles = ROLES.filter((r) =>
     actorRole === "SUPER_ADMIN" ? true : r !== "SUPER_ADMIN" && r !== "BUSINESS_OWNER",
@@ -94,6 +95,31 @@ export default function UsersManager({
     }
   }
 
+  async function saveRole(user: AdminUserRow) {
+    const nextRole = roleChanges[user.id] ?? user.role;
+    if (nextRole === user.role) return;
+    setMsg(null);
+    setBusyUserId(user.id);
+    try {
+      const { ok, d } = await call("PATCH", { id: user.id, action: "set-role", role: nextRole });
+      if (!ok) {
+        setMsg({ ok: false, text: d.error ?? "Could not change the account role." });
+        return;
+      }
+      setUsers((current) => current.map((u) => (u.id === user.id ? { ...u, role: nextRole } : u)));
+      setRoleChanges((current) => {
+        const next = { ...current };
+        delete next[user.id];
+        return next;
+      });
+      setMsg({ ok: true, text: `Updated ${user.email} to ${ROLE_LABEL[nextRole]}.` });
+    } catch {
+      setMsg({ ok: false, text: "Network error while changing the role. Please try again." });
+    } finally {
+      setBusyUserId(null);
+    }
+  }
+
   const field = "mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500";
 
   return (
@@ -145,7 +171,20 @@ export default function UsersManager({
                     <b>{u.name}</b><br />
                     <span className="text-xs text-slate-500">{u.email}</span>
                   </td>
-                  <td className="px-4 py-3">{ROLE_LABEL[u.role] ?? u.role}</td>
+                  <td className="px-4 py-3">
+                    {actorRole === "SUPER_ADMIN" && u.id !== selfId ? (
+                      <div className="flex min-w-40 flex-col gap-2">
+                        <select aria-label={`Role for ${u.email}`} className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs" value={roleChanges[u.id] ?? u.role} disabled={busyUserId !== null || busy} onChange={(e) => setRoleChanges((current) => ({ ...current, [u.id]: e.target.value as AdminRole }))}>
+                          {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
+                        </select>
+                        {(roleChanges[u.id] ?? u.role) !== u.role && (
+                          <button type="button" disabled={busyUserId !== null || busy} onClick={() => saveRole(u)} className="self-start rounded-lg border border-amber-400 px-2 py-1 text-xs font-bold text-amber-900 hover:bg-amber-50 disabled:opacity-50">
+                            Save role
+                          </button>
+                        )}
+                      </div>
+                    ) : (ROLE_LABEL[u.role] ?? u.role)}
+                  </td>
                   <td className="px-4 py-3">{u.active ? (u.must_change_password ? "Active · must change password" : "Active") : "Deactivated"}</td>
                   <td className="px-4 py-3 text-slate-600">
                     {u.last_login_at ? new Date(u.last_login_at).toLocaleString("en-GB", { timeZone: "Asia/Kathmandu" }) : "Never"}
