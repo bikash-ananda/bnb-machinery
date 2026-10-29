@@ -1,7 +1,7 @@
 import "server-only";
 
-import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
-import { db } from "@/src/db/client";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { db, type Tx } from "@/src/db/client";
 import { brands, categories, productImages, products } from "./schema";
 import { slugify, type CatalogInput } from "./admin";
 
@@ -11,7 +11,7 @@ function slugFor(name: string, suffix: string) {
   return slugify(name) + "-" + suffix.slice(0, 8);
 }
 
-async function resolveCategory(tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0], name: string | null) {
+async function resolveCategory(tx: Tx, name: string | null) {
   if (!name) return null;
   const existing = await tx.select({ id: categories.id }).from(categories).where(sql`lower(${categories.nameEn}) = lower(${name})`).limit(1);
   if (existing[0]) return existing[0].id;
@@ -19,7 +19,7 @@ async function resolveCategory(tx: typeof db | Parameters<Parameters<typeof db.t
   return created.id;
 }
 
-async function resolveBrand(tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0], name: string | null) {
+async function resolveBrand(tx: Tx, name: string | null) {
   if (!name) return null;
   const existing = await tx.select({ id: brands.id }).from(brands).where(sql`lower(${brands.name}) = lower(${name})`).limit(1);
   if (existing[0]) return existing[0].id;
@@ -60,7 +60,7 @@ export async function listCatalog(input: { q?: string; categoryId?: string; bran
   ]);
   const ids = rows.map((r) => r.id);
   const images = ids.length ? await db.select({ productId: productImages.productId, url: productImages.url, sortOrder: productImages.sortOrder })
-    .from(productImages).where(sql`${productImages.productId} = any(array[${sql.join(ids.map((id) => sql`${id}::uuid`), sql`,`)}]::uuid[])`)
+    .from(productImages).where(inArray(productImages.productId, ids))
     .orderBy(asc(productImages.sortOrder)) : [];
   const byProduct = new Map<string, string[]>();
   for (const image of images) byProduct.set(image.productId, [...(byProduct.get(image.productId) ?? []), image.url]);
@@ -100,9 +100,9 @@ export async function saveCatalogProduct(input: CatalogInput, actor: CatalogActo
       id = created.id;
     }
     if (input.images.length) await tx.insert(productImages).values(input.images.map((url, sortOrder) => ({ productId: id, url, sortOrder })));
-    await tx.insert((await import("@/src/modules/accounting/schema")).auditEvents).values({
-      actor: actor.email, action: productId ? "catalog.product.updated" : "catalog.product.created",
-      entityType: "product", entityId: id,
+    await tx.insert((await import("@/src/modules/local-workflow/schema")).localAdminAuditEvents).values({
+      actorEmail: actor.email, action: productId ? "catalog.product.updated" : "catalog.product.created",
+      targetType: "product", targetId: id,
       details: { sku: input.sku, published: false },
     });
     return { id };
@@ -116,9 +116,9 @@ export async function setCatalogPublished(productId: string, published: boolean,
     if (!current) return null;
     const [updated] = await tx.update(products).set({ isPublished: published, updatedAt: new Date() })
       .where(eq(products.id, productId)).returning({ id: products.id, isPublished: products.isPublished });
-    await tx.insert((await import("@/src/modules/accounting/schema")).auditEvents).values({
-      actor: actor.email, action: published ? "catalog.product.published" : "catalog.product.unpublished",
-      entityType: "product", entityId: productId, details: { name: current.name },
+    await tx.insert((await import("@/src/modules/local-workflow/schema")).localAdminAuditEvents).values({
+      actorEmail: actor.email, action: published ? "catalog.product.published" : "catalog.product.unpublished",
+      targetType: "product", targetId: productId, details: { name: current.name },
     });
     return updated;
   });
