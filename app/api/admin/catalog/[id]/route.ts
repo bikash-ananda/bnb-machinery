@@ -10,7 +10,7 @@ import { getCatalogProduct, saveCatalogProduct, setCatalogPublished } from "@/sr
 export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
 
-export async function GET(request: Request, context: Context) {
+export async function GET(_request: Request, context: Context) {
   const session = await getAdminSession();
   if (!session || session.mustChange || !canAccess(session.role, "catalog")) return jsonSafe({ error: "Not allowed." }, 401);
   const { id } = await context.params;
