@@ -4,6 +4,7 @@ import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db, type Tx } from "@/src/db/client";
 import { brands, categories, productImages, products } from "./schema";
 import { slugify, type CatalogInput } from "./admin";
+import { getAvailability } from "../inventory/service";
 
 export type CatalogActor = { email: string; role: string };
 
@@ -158,7 +159,7 @@ export async function getPublicCatalogProducts() {
   const [images, availability] = await Promise.all([
     db.select({ productId: productImages.productId, url: productImages.url, sortOrder: productImages.sortOrder })
       .from(productImages).where(inArray(productImages.productId, ids)).orderBy(asc(productImages.sortOrder)),
-    db.transaction((tx) => import("./service").then(({ getAvailability }) => getAvailability(tx, ids))),
+    db.transaction((tx) => getAvailability(tx, ids)),
   ]);
   const imageMap = new Map<string, string[]>();
   for (const image of images) imageMap.set(image.productId, [...(imageMap.get(image.productId) ?? []), image.url]);
