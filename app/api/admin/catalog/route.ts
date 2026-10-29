@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { adminApi } from "@/lib/server/admin-api";
 import { canAccess } from "@/lib/admin/access";
 import { getAdminSession } from "@/lib/server/admin-auth";
@@ -16,7 +15,7 @@ function positiveInt(value: string | null, fallback: number, max: number) {
   return Number.isSafeInteger(n) && n >= 1 ? Math.min(n, max) : fallback;
 }
 
-export async function GET(_request: Request) {
+export async function GET(request: Request) {
   const session = await getAdminSession();
   if (!session || session.mustChange || !canAccess(session.role, "catalog")) return jsonSafe({ error: "Not allowed." }, 401);
   try {
