@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { requireAdmin } from "@/lib/server/admin-auth";
 import { db } from "@/src/db/client";
 import { purchaseBills, suppliers } from "@/src/modules/purchasing/schema";
