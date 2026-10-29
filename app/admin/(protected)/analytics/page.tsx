@@ -1,4 +1,4 @@
-import { desc, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { requireAdmin } from "@/lib/server/admin-auth";
 import { db } from "@/src/db/client";
 import { orders } from "@/src/modules/sales/schema";
