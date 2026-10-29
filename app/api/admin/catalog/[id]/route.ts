@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminApi } from "@/lib/server/admin-api";
 import { UUID } from "@/lib/server/admin-api";
+import { canAccess } from "@/lib/admin/access";
+import { getAdminSession } from "@/lib/server/admin-auth";
 import { jsonSafe } from "@/src/lib/json";
 import { parseCatalogInput } from "@/src/modules/catalog/admin";
 import { getCatalogProduct, saveCatalogProduct, setCatalogPublished } from "@/src/modules/catalog/management";
@@ -9,8 +11,8 @@ export const runtime = "nodejs";
 type Context = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, context: Context) {
-  const guarded = await adminApi(request, "catalog");
-  if ("error" in guarded) return guarded.error;
+  const session = await getAdminSession();
+  if (!session || session.mustChange || !canAccess(session.role, "catalog")) return jsonSafe({ error: "Not allowed." }, 401);
   const { id } = await context.params;
   if (!UUID.test(id)) return jsonSafe({ error: "Product not found." }, 404);
   try {
