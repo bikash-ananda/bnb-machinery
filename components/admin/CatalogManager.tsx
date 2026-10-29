@@ -57,7 +57,11 @@ export default function CatalogManager() {
     finally { setLoading(false); }
   }, [page, q, status, categoryId, brandId]);
 
-  useEffect(() => {\n    let active = true;\n    Promise.resolve().then(() => { if (active) void load(); });\n    return () => { active = false; };\n  }, [load]);
+  useEffect(() => {
+    let active = true;
+    Promise.resolve().then(() => { if (active) void load(); });
+    return () => { active = false; };
+  }, [load]);
 
   const filteredHint = useMemo(() => total ? `Showing ${(page - 1) * 25 + 1}–${Math.min(page * 25, total)} of ${total}` : "No products found", [page, total]);
 
