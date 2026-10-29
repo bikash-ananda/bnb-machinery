@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { adminApi } from "@/lib/server/admin-api";
 import { UUID } from "@/lib/server/admin-api";
 import { canAccess } from "@/lib/admin/access";
