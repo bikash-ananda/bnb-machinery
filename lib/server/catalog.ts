@@ -6,6 +6,7 @@ import { productImage } from "@/data/siteImages";
 import type { ProductRecord } from "@/lib/inventory/types";
 import { getPublishedProducts } from "@/lib/server/inventory";
 import type { ShopProduct } from "@/lib/shop/types";
+import { getPublicCatalogProducts } from "@/src/modules/catalog/management";
 
 function fromStatic(p: Product): ShopProduct {
   const extra = staticPrices[p.id] ?? {};
@@ -40,9 +41,14 @@ function fromDb(r: ProductRecord): ShopProduct {
 }
 
 export async function getShopProducts(): Promise<ShopProduct[]> {
-  let live: ShopProduct[] = [];
-  try { live = (await getPublishedProducts()).map(fromDb); } catch { live = []; }
-  const seen = new Set(live.map((p) => p.slug));
+  const [legacy, managed] = await Promise.all([
+    getPublishedProducts().then((rows) => rows.map(fromDb)).catch(() => [] as ShopProduct[]),
+    getPublicCatalogProducts().catch(() => [] as ShopProduct[]),
+  ]);
+  // The transactional catalogue is authoritative for matching slugs; legacy published
+  // entries remain visible during migration, and static reference products stay as fallback.
+  const live = [...managed, ...legacy.filter((p) => !managed.some((m) => m.slug === p.slug))];
+  const seen = new Set(live.flatMap((p) => [p.slug, p.id]));
   return [...live, ...staticProducts.filter((s) => !seen.has(s.id)).map(fromStatic)];
 }
 
