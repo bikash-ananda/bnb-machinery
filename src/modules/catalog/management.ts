@@ -139,3 +139,41 @@ export async function getCatalogProduct(productId: string) {
   const rupees = (p: bigint | null) => p === null ? "" : (Number(p) / 100).toFixed(2);
   return { ...row, price: rupees(row.price), mrp: rupees(row.mrp), cost: rupees(row.cost), images: images.map((i) => i.url) };
 }
+
+
+/** Public, published products from the transactional catalogue used by POS and stock ledger. */
+export async function getPublicCatalogProducts() {
+  const rows = await db.select({
+    id: products.id, slug: products.slug, name: products.nameEn, nameNe: products.nameNe,
+    description: products.descriptionEn, model: products.model, brand: brands.name, category: categories.nameEn,
+    pricePaisa: products.pricePaisa, mrpPaisa: products.mrpPaisa, isFeatured: products.isFeatured,
+    trackStock: products.trackStock, specs: products.specs,
+  }).from(products)
+    .leftJoin(brands, eq(products.brandId, brands.id))
+    .leftJoin(categories, eq(products.categoryId, categories.id))
+    .where(eq(products.isPublished, true))
+    .orderBy(asc(products.nameEn)).limit(2000);
+  if (!rows.length) return [];
+  const ids = rows.map((row) => row.id);
+  const [images, availability] = await Promise.all([
+    db.select({ productId: productImages.productId, url: productImages.url, sortOrder: productImages.sortOrder })
+      .from(productImages).where(inArray(productImages.productId, ids)).orderBy(asc(productImages.sortOrder)),
+    db.transaction((tx) => import("./service").then(({ getAvailability }) => getAvailability(tx, ids))),
+  ]);
+  const imageMap = new Map<string, string[]>();
+  for (const image of images) imageMap.set(image.productId, [...(imageMap.get(image.productId) ?? []), image.url]);
+  return rows.map((row) => {
+    const productImages = imageMap.get(row.id) ?? [];
+    const available = row.trackStock ? Math.max(0, availability.get(row.id) ?? 0) : null;
+    return {
+      id: row.id, slug: row.slug, name: row.name, nameNe: row.nameNe ?? undefined,
+      brand: row.brand ?? "Machinery Tools Nepal", category: row.category ?? "Machinery",
+      image: productImages[0] ?? "", images: productImages, description: row.description ?? "",
+      model: row.model ?? undefined, specs: row.specs ?? [],
+      price: row.pricePaisa === null ? null : Number(row.pricePaisa) / 100,
+      mrp: row.mrpPaisa === null ? null : Number(row.mrpPaisa) / 100,
+      availability: row.trackStock ? (available && available > 0 ? "in" as const : "out" as const) : "ask" as const,
+      stockQty: available, featured: row.isFeatured,
+    };
+  });
+}
