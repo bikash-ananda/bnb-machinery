@@ -45,7 +45,7 @@ const bool = (value: unknown, fallback = false) => {
 
 function money(value: unknown, field: string): bigint | null {
   if (value === undefined || value === null || value === "") return null;
-  if (typeof value !== "string" && typeof value !== "number") throw new Error(`${field} must be a valid amount.`);
+  if (typeof value !== "string") throw new Error(`${field} must be a valid decimal string.`);
   try {
     const amount = toPaisa(value);
     if (amount < 0n) throw new Error("negative");
