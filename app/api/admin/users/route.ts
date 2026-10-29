@@ -74,7 +74,7 @@ export async function PATCH(request: Request) {
   const g = await adminApi(request, "users");
   if ("error" in g) return g.error;
 
-  let b: { id?: unknown; action?: unknown };
+  let b: { id?: unknown; action?: unknown; role?: unknown };
   try {
     b = await request.json();
   } catch {
@@ -83,7 +83,7 @@ export async function PATCH(request: Request) {
 
   if (typeof b.id !== "string" || !UUID.test(b.id)) return fail("Invalid account ID.");
   if (b.id === g.session.userId) return fail("You cannot change your own account here. Use Change password.");
-  if (b.action !== "reset" && b.action !== "activate" && b.action !== "deactivate") {
+  if (b.action !== "reset" && b.action !== "activate" && b.action !== "deactivate" && b.action !== "set-role") {
     return fail("Invalid action.");
   }
 
@@ -93,6 +93,31 @@ export async function PATCH(request: Request) {
     if (!isRole(target.role)) return fail("The target account has an invalid role. Contact the Super Admin.", 409);
     if (!canManageTarget(g.session.role, target.role)) {
       return fail("You do not have permission to manage this privileged account.", 403);
+    }
+
+    if (b.action === "set-role") {
+      if (g.session.role !== "SUPER_ADMIN") {
+        return fail("Only the Super Admin can grant or revoke roles.", 403);
+      }
+      if (!isRole(b.role)) return fail("Choose a valid role.");
+      if (target.role === "SUPER_ADMIN" && b.role !== "SUPER_ADMIN" && target.active) {
+        const activeAdmins = await dbRequest<{ id: string }[]>(
+          "admin_users?select=id&role=eq.SUPER_ADMIN&active=eq.true&limit=2",
+        );
+        if (activeAdmins.length <= 1) {
+          return fail("The last active Super Admin cannot lose Super Admin privileges.", 409);
+        }
+      }
+      const rows = await dbRequest<{ id: string }[]>("admin_users?id=eq." + encodeURIComponent(b.id), {
+        method: "PATCH",
+        headers: { prefer: "return=representation" },
+        body: JSON.stringify({ role: b.role, updated_at: new Date().toISOString() }),
+      });
+      if (!rows.length) return fail("Account not found or no change was made.", 404);
+      if (target.role !== b.role) {
+        await logAudit(g.session, "user.role_changed", "admin_user", b.id, { from: target.role, to: b.role }, request);
+      }
+      return NextResponse.json({ ok: true, role: b.role });
     }
 
     if (b.action === "deactivate" && target.role === "SUPER_ADMIN") {
