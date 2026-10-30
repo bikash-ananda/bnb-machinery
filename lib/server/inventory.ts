@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { ProductFields, ProductRecord, StaffSession, VerificationStatus } from "@/lib/inventory/types";
 import { db } from "@/src/db/client";
 import { inventoryWorkflowAuditEvents, inventoryWorkflowProductImages, inventoryWorkflowProducts } from "@/src/modules/local-workflow/schema";
