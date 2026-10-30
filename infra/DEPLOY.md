@@ -48,7 +48,7 @@ APP_ORIGIN=https://machinery-tools.com
 APP_HOST_PORT=3083
 ```
 
-Then set unique random values for `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `OTP_HASH_SECRET` and `AUTOMATION_CRON_SECRET`; update `DATABASE_URL` and `REDIS_URL` to match. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, verified sender addresses and the owner/order email addresses. Replace the documentation-only `ADMIN_ALLOWED_IPS` value with the trusted admin IP/CIDR. Keep all credentials private and out of Git.
+Then set unique random values for `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `OTP_HASH_SECRET` and `AUTOMATION_CRON_SECRET`; update `DATABASE_URL` and `REDIS_URL` to match. Set `RESEND_API_KEY`, verified sender addresses and the owner/order email addresses. PostgreSQL is the single application database; no Supabase credentials are used. Replace the documentation-only `ADMIN_ALLOWED_IPS` value with the trusted admin IP/CIDR. Keep all credentials private and out of Git.
 
 Generate random secrets on the VPS with `openssl rand -hex 32`. Use the resulting values in the private environment file. Do not paste secrets into chat.
 
