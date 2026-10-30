@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getStaffSession } from "@/lib/server/auth";
 import { downloadPrivateImage } from "@/lib/server/media-storage";
 import { db } from "@/src/db/client";
