@@ -3,7 +3,7 @@ import { and, count, eq, isNull } from "drizzle-orm";
 import { isRole, type AdminRole } from "@/lib/admin/access";
 import { canChangeAdminRole, canCreateAdminRole, canManageAdminTarget, protectsLastActiveSuperAdminFromDeactivation, protectsLastActiveSuperAdminFromDemotion } from "@/lib/admin/user-management";
 import { adminApi, fail, UUID } from "@/lib/server/admin-api";
-import { generateTempPassword, hashPassword, normalizeEmail, revokeUserSessions } from "@/lib/server/admin-auth";
+import { generateTempPassword, hashPassword, normalizeEmail } from "@/lib/server/admin-auth";
 import { db } from "@/src/db/client";
 import { localAdminAuditEvents, localAdminSessions, localAdminUsers } from "@/src/modules/local-workflow/schema";
 
