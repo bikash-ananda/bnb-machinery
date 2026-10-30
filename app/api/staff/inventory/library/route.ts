@@ -12,7 +12,7 @@ import {
   BackendNotConfiguredError,
   deletePrivateImages,
   uploadPrivateImage,
-} from "@/lib/server/supabase";
+} from "@/lib/server/media-storage";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_HOSTS: Record<string, Set<string>> = {
