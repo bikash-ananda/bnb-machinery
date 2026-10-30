@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   let body: { code?: unknown };
   try { body = await request.json(); } catch { return stop("Enter the 6-digit code.", 400); }
   const code = typeof body.code === "string" ? body.code.trim() : "";
-  if (!/^\\d{6}$/.test(code)) return stop("Enter the 6-digit code.", 400);
+  if (!/^\d{6}$/.test(code)) return stop("Enter the 6-digit code.", 400);
   const userId = readPending((await cookies()).get(PENDING_COOKIE)?.value);
   if (!userId) return stop("Your sign-in expired. Please start again.", 401, true);
 
