@@ -1,5 +1,8 @@
+import { and, eq } from "drizzle-orm";
 import { getStaffSession } from "@/lib/server/auth";
-import { downloadPrivateImage, dbRequest } from "@/lib/server/supabase";
+import { downloadPrivateImage } from "@/lib/server/media-storage";
+import { db } from "@/src/db/client";
+import { inventoryWorkflowProductImages, inventoryWorkflowProducts } from "@/src/modules/local-workflow/schema";
 
 type Context = { params: Promise<{ id: string }> };
 type ImageRow = { product_id: string; storage_path: string; mime_type: string };
