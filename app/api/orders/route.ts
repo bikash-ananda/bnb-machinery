@@ -4,7 +4,6 @@ import { isAllowedOrigin } from "@/lib/server/auth";
 import { rateLimited } from "@/lib/server/ai";
 import { getShopProducts } from "@/lib/server/catalog";
 import { notifyNewOrder } from "@/lib/server/notify";
-import { dbRequest, hasSupabaseConfig } from "@/lib/server/supabase";
 import { createOrder } from "@/src/modules/sales/orders";
 import { InsufficientStockError } from "@/src/modules/inventory/service";
 import { isPaymentProvider, paymentProviderName } from "@/lib/server/payment-qr";
@@ -63,20 +62,6 @@ export async function POST(request: Request) {
   let orderNo = `MTN-${yymmdd}-${randomInt(1000, 10000)}`;
 
   let saved = false;
-  if (!process.env.DATABASE_URL && hasSupabaseConfig()) {
-    try {
-      await dbRequest("orders", {
-        method: "POST",
-        headers: { prefer: "return=minimal" },
-        body: JSON.stringify({
-          order_no: orderNo, customer_name: name, phone, email: email || null,
-          address: address || null, district: district || null, delivery_method: delivery,
-          payment_method: payment, note: note || null, items: lines, subtotal, unpriced_items: unpriced,
-        }),
-      });
-      saved = true;
-    } catch { saved = false; }
-  }
 
   if (process.env.DATABASE_URL) {
     try {
