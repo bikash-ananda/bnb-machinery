@@ -43,7 +43,6 @@ Generate separate random passwords on the VPS with openssl rand -hex 32. Put the
 - DOMAIN: the domain you control, without https://.
 - APP_ORIGIN: https:// plus the root domain, with no trailing slash.
 - ADMIN_ALLOWED_IPS: your stable public IPv4/CIDR, for example 198.51.100.25/32. You can include your office VPN/network CIDR too. The root and www domains block /admin and /api/admin from all other IPs.
-- SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY: from the Supabase project settings.
 - RESEND_API_KEY and OTP_FROM_EMAIL: the API key and an authenticated sender address.
 - AUTOMATION_FROM_EMAIL and AUTOMATION_ALERT_EMAIL: verified Resend sender and the business inbox for order, stock and daily finance alerts. Generate AUTOMATION_CRON_SECRET with `openssl rand -hex 32`; keep it private.
 - ORDER_NOTIFY_EMAIL: the inbox that receives new order notices. It defaults to bikashengineering100@gmail.com in the example.
