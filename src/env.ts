@@ -44,9 +44,6 @@ const schema = z
     OTP_HASH_SECRET: opt(z.string().min(32, "OTP_HASH_SECRET must be at least 32 characters")),
     OWNER_EMAIL: opt(z.string().email()),
     ORDER_NOTIFY_EMAIL: opt(z.string().email()),
-    // Legacy (removed in Roadmap 1.3)
-    SUPABASE_URL: opt(z.string().url()),
-    SUPABASE_SERVICE_ROLE_KEY: opt(z.string()),
   })
   .superRefine((e, ctx) => {
     if (e.NODE_ENV === "production" && !e.APP_ORIGIN) {
