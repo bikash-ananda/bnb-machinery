@@ -7,7 +7,7 @@ This project runs as a single Next.js standalone container behind Caddy. The web
 - Use a domain you control. Point A records for the root domain, www, and admin to 169.58.25.131. Caddy needs public DNS plus reachable TCP ports 80 and 443 to issue HTTPS certificates.
 - Have a stable public IP/CIDR for the admin allowlist. The shipped example uses 203.0.113.1/32, a documentation-only address that intentionally blocks admin access until replaced.
 - Make sure the project changes intended for production are pushed to the repository's main branch before cloning it on the server.
-- Prepare Supabase's project URL and service-role key. Current admin login and legacy inventory still use Supabase; the service-role key must stay server-side.
+- Prepare the PostgreSQL database, persistent media volume, Resend sender credentials and OTP_HASH_SECRET. The application uses VPS PostgreSQL; no Supabase account or service-role key is required.
 - Verify a sender domain with Resend and set OTP_FROM_EMAIL. Admin sign-in requires email OTP, OTP_HASH_SECRET, and the Supabase admin-auth SQL migrations.
 
 ## Harden the VPS
