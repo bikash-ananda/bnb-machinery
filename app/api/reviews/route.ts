@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
 import { rateLimited } from "@/lib/server/ai";
 import { isAllowedOrigin } from "@/lib/server/auth";
 import { getShopProduct } from "@/lib/server/catalog";
