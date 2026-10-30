@@ -6,7 +6,7 @@ import {
   BackendNotConfiguredError,
   deletePrivateImages,
   uploadPrivateImage,
-} from "@/lib/server/supabase";
+} from "@/lib/server/media-storage";
 
 const MAX_IMAGE_COUNT = 5;
 const MAX_TOTAL_SIZE = 25 * 1024 * 1024;
