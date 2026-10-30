@@ -25,7 +25,7 @@ export async function GET(request:Request) {
 }
 export async function POST(request:Request) {
  const guard=await adminApi(request,"procurement");if("error" in guard)return guard.error;
- if(!["SUPER_ADMIN","BUSINESS_OWNER","MANAGER","PROCUREMENT_STAFF","INVENTORY_MANAGER"].includes(guard.session.role))return fail("You do not have permission to post supplier purchases.",403);
+ if(!["SUPER_ADMIN","BUSINESS_OWNER","MANAGER","PROCUREMENT_STAFF","INVENTORY_MANAGER","ACCOUNTANT"].includes(guard.session.role))return fail("You do not have permission to post supplier purchases.",403);
  let body:Record<string,unknown>;try{const v:unknown=await request.json();if(!v||typeof v!=="object"||Array.isArray(v))return fail("Invalid request.");body=v as Record<string,unknown>;}catch{return fail("Invalid request.");}
  if(typeof body.supplierInvoiceNo!=="string"||!body.supplierInvoiceNo.trim()||body.supplierInvoiceNo.trim().length>100||typeof body.invoiceDate!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(body.invoiceDate)||typeof body.locationId!=="string"||!UUID.test(body.locationId)||!Array.isArray(body.lines)||!body.lines.length||body.lines.length>100)return fail("Enter invoice number, date, receiving location and at least one product.");
  const [year,month,day]=body.invoiceDate.split("-").map(Number),d=new Date(Date.UTC(year,month-1,day));if(d.getUTCFullYear()!==year||d.getUTCMonth()!==month-1||d.getUTCDate()!==day)return fail("Invoice date is invalid.");
