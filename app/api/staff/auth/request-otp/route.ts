@@ -7,7 +7,7 @@ import {
   resolveAllowedRole,
   sendLoginOtp,
 } from "@/lib/server/auth";
-import { BackendNotConfiguredError } from "@/lib/server/supabase";
+import { BackendNotConfiguredError } from "@/lib/server/auth";
 
 export const runtime = "nodejs";
 
