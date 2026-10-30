@@ -64,6 +64,13 @@
       "when": 1793460000000,
       "tag": "0008_product_reviews_and_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793461000000,
+      "tag": "0009_local_admin_auth_completion",
+      "breakpoints": true
     }
   ]
 }
