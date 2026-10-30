@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import type { NextResponse } from "next/server";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/src/db/client";
 import { localAdminLoginOtps } from "@/src/modules/local-workflow/schema";
 
@@ -25,6 +25,7 @@ export async function issueOtp(email: string): Promise<{ ok: true; code: string 
   const expiresAt = new Date(now.getTime() + 5 * 60_000);
   const emailKey = key(email);
   const result = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${emailKey}))`);
     const [existing] = await tx.select().from(localAdminLoginOtps).where(eq(localAdminLoginOtps.email, emailKey)).limit(1);
     if (existing && now.getTime() - existing.requestWindowStartedAt.getTime() < 15 * 60_000 && existing.requestCount >= 5) return false;
     await tx.insert(localAdminLoginOtps).values({
@@ -47,6 +48,7 @@ export async function issueOtp(email: string): Promise<{ ok: true; code: string 
 export async function checkOtp(email: string, code: string): Promise<"valid" | "invalid" | "expired" | "blocked"> {
   const emailKey = key(email);
   return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${emailKey}))`);
     const [row] = await tx.select().from(localAdminLoginOtps)
       .where(and(eq(localAdminLoginOtps.email, emailKey), isNull(localAdminLoginOtps.consumedAt))).limit(1);
     if (!row) return "invalid";
