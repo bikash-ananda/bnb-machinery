@@ -5,7 +5,7 @@ import { lineTotal, mulBp } from "../../lib/money";
 import { ACC, PAY_ACCOUNT, postJournal } from "../accounting/posting";
 import { products } from "../catalog/schema";
 import { weightedAverage } from "../inventory/costing";
-import { stockBalances } from "../inventory/schema";
+import { stockBalances, stockLocations } from "../inventory/schema";
 import { postMovement } from "../inventory/service";
 import { nextSeq } from "../sales/numbering";
 import { VAT_RATE_BP, type TaxCategory } from "../sales/pricing";
@@ -18,6 +18,7 @@ export type NewPurchaseBill = {
   supplierInvoiceNo: string;
   invoiceDate: { year: number; month: number; day: number }; // AD date on the supplier's invoice
   items: { slug: string; qty: number; unitPaisa: bigint; taxCategory?: TaxCategory }[]; // unit price EXCLUDING VAT
+  locationId?: string;
   createdBy?: string;
 };
 
@@ -33,6 +34,10 @@ export async function createPurchaseBill(input: NewPurchaseBill) {
   if (input.items.length === 0) throw new PurchaseError("A bill needs at least one item.");
 
   return db.transaction(async (tx) => {
+    if (input.locationId) {
+      const [location] = await tx.select({ id: stockLocations.id }).from(stockLocations).where(eq(stockLocations.id, input.locationId)).limit(1);
+      if (!location) throw new PurchaseError("Stock location not found.");
+    }
     let supplierId = input.supplier.id;
     if (!supplierId) {
       const name = input.supplier.name?.trim();
@@ -82,7 +87,7 @@ export async function createPurchaseBill(input: NewPurchaseBill) {
       const [cur] = await tx.select({ cost: products.costPaisa }).from(products).where(eq(products.id, l.p.id));
       const [bal] = await tx.select({ s: sql<string>`coalesce(sum(${stockBalances.onHand}), 0)` }).from(stockBalances).where(eq(stockBalances.productId, l.p.id));
       await tx.update(products).set({ costPaisa: weightedAverage(Number(bal.s), cur.cost, l.qty, l.unit), trackStock: true }).where(eq(products.id, l.p.id));
-      await postMovement(tx, { productId: l.p.id, qty: l.qty, type: "PURCHASE", refType: "purchase_bill", refId: bill.id, createdBy: input.createdBy });
+      await postMovement(tx, { productId: l.p.id, qty: l.qty, type: "PURCHASE", locationId: input.locationId, refType: "purchase_bill", refId: bill.id, createdBy: input.createdBy });
     }
 
     await postJournal(tx, {
