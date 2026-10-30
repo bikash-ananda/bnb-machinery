@@ -44,14 +44,14 @@ export async function POST(request: Request) {
 
   // Prices always come from the server catalogue, never from the browser.
   const catalog = new Map((await getShopProducts()).map((p) => [p.id, p]));
-  const lines: { id: string; name: string; qty: number; price: number | null }[] = [];
+  const lines: { id: string; slug: string; name: string; qty: number; price: number | null }[] = [];
   for (const it of rawItems) {
     const id = str((it as { id?: unknown }).id, 120);
     const qty = Number((it as { qty?: unknown }).qty);
     const p = catalog.get(id);
     if (!p || !Number.isInteger(qty) || qty < 1 || qty > 99) return fail("An item in your cart is no longer available. Please refresh and try again.");
     if (p.availability === "out") return fail(`“${p.name}” is out of stock.`);
-    lines.push({ id, name: p.name, qty, price: p.price });
+    lines.push({ id, slug: p.slug, name: p.name, qty, price: p.price });
   }
 
   const subtotal = lines.reduce((n, l) => n + (l.price ?? 0) * l.qty, 0);
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
         channel: "WEB",
         customer: { name, phone, email, address, district },
         delivery, payment, note,
-        items: lines.map((l) => ({ slug: l.id, qty: l.qty })),
+        items: lines.map((l) => ({ slug: l.slug, qty: l.qty })),
       });
       orderNo = o.orderNo;
       total = Number(o.totalPaisa) / 100;
