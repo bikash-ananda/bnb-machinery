@@ -3,9 +3,9 @@ import { and, count, eq } from "drizzle-orm";
 import { isRole, type AdminRole } from "@/lib/admin/access";
 import { canChangeAdminRole, canCreateAdminRole, canManageAdminTarget, protectsLastActiveSuperAdminFromDeactivation, protectsLastActiveSuperAdminFromDemotion } from "@/lib/admin/user-management";
 import { adminApi, fail, UUID } from "@/lib/server/admin-api";
-import { generateTempPassword, hashPassword, logAudit, normalizeEmail, revokeUserSessions } from "@/lib/server/admin-auth";
+import { generateTempPassword, hashPassword, normalizeEmail, revokeUserSessions } from "@/lib/server/admin-auth";
 import { db } from "@/src/db/client";
-import { localAdminUsers } from "@/src/modules/local-workflow/schema";
+import { localAdminAuditEvents, localAdminSessions, localAdminUsers } from "@/src/modules/local-workflow/schema";
 
 export const runtime = "nodejs";
 
@@ -54,7 +54,7 @@ export async function PATCH(request: Request) {
           if (protectsLastActiveSuperAdminFromDemotion(target.role as AdminRole, target.active, body.role, result.total)) return fail("The last active Super Admin cannot lose Super Admin privileges.", 409);
         }
         await tx.update(localAdminUsers).set({ role: body.role, updatedAt: new Date() }).where(eq(localAdminUsers.id, target.id));
-        await tx.insert((await import("@/src/modules/local-workflow/schema")).localAdminAuditEvents).values({ actorUserId: g.session.userId, actorEmail: g.session.email, action: "user.role_changed", targetType: "admin_user", targetId: target.id, details: { from: target.role, to: body.role } });
+        await tx.insert(localAdminAuditEvents).values({ actorUserId: g.session.userId, actorEmail: g.session.email, action: "user.role_changed", targetType: "admin_user", targetId: target.id, details: { from: target.role, to: body.role } });
         return NextResponse.json({ ok: true, role: body.role });
       }
 
@@ -71,7 +71,7 @@ export async function PATCH(request: Request) {
       const active = body.action === "activate";
       await tx.update(localAdminUsers).set({ active, updatedAt: new Date() }).where(eq(localAdminUsers.id, target.id));
       await tx.insert((await import("@/src/modules/local-workflow/schema")).localAdminAuditEvents).values({ actorUserId: g.session.userId, actorEmail: g.session.email, action: active ? "user.activated" : "user.deactivated", targetType: "admin_user", targetId: target.id, details: { targetRole: target.role } });
-      if (!active) await revokeUserSessions(target.id);
+      if (!active) await tx.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(eq(localAdminSessions.userId, target.id), eq(localAdminSessions.revokedAt, null as never)));
       return NextResponse.json({ ok: true });
     });
   } catch { return fail("Could not update the user.", 503); }
