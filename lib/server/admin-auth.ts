@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import type { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, ne } from "drizzle-orm";
 import { db } from "@/src/db/client";
 import { localAdminAuditEvents, localAdminSessions, localAdminUsers } from "@/src/modules/local-workflow/schema";
 import { canAccess, isRole, passwordProblem, type AdminRole, type ModuleId } from "@/lib/admin/access";
@@ -81,7 +81,7 @@ export async function requireAdmin(module?: ModuleId) {
 }
 export async function revokeUserSessions(userId: string, exceptHash?: string) {
   const conditions = [eq(localAdminSessions.userId, userId), isNull(localAdminSessions.revokedAt)];
-  if (exceptHash) conditions.push(eq(localAdminSessions.tokenHash, exceptHash) as never);
+  if (exceptHash) conditions.push(ne(localAdminSessions.tokenHash, exceptHash));
   await db.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(...conditions));
 }
 export async function logAudit(actor: { email: string; role: string } | null, action: string, entity: string, entityId: string, detail: unknown, request?: Request, mustSucceed = false) {
