@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import type { StaffRole, StaffSession } from "@/lib/inventory/types";
 import { db } from "@/src/db/client";
 import { inventoryLoginOtps, inventoryStaffSessions } from "@/src/modules/local-workflow/schema";
@@ -43,6 +43,7 @@ export async function requestLoginOtp(email: string): Promise<{ status: string; 
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 5 * 60_000);
   const result = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${email}))`);
     const [row] = await tx.select().from(inventoryLoginOtps).where(eq(inventoryLoginOtps.email, email)).limit(1);
     const inWindow = row && now.getTime() - row.requestWindowStartedAt.getTime() < 15 * 60_000;
     if (inWindow && row.requestCount >= 5) return false;
@@ -74,6 +75,7 @@ export async function sendLoginOtp(email: string, code: string) {
 export async function verifyLoginOtp(email: string, code: string) {
   const now = new Date();
   return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${email}))`);
     const [row] = await tx.select().from(inventoryLoginOtps).where(and(eq(inventoryLoginOtps.email, email), isNull(inventoryLoginOtps.consumedAt))).limit(1);
     if (!row) return "invalid";
     if (row.expiresAt <= now) return "expired";
