@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, count, eq } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { isRole, type AdminRole } from "@/lib/admin/access";
 import { canChangeAdminRole, canCreateAdminRole, canManageAdminTarget, protectsLastActiveSuperAdminFromDeactivation, protectsLastActiveSuperAdminFromDemotion } from "@/lib/admin/user-management";
 import { adminApi, fail, UUID } from "@/lib/server/admin-api";
@@ -71,7 +71,7 @@ export async function PATCH(request: Request) {
       const active = body.action === "activate";
       await tx.update(localAdminUsers).set({ active, updatedAt: new Date() }).where(eq(localAdminUsers.id, target.id));
       await tx.insert((await import("@/src/modules/local-workflow/schema")).localAdminAuditEvents).values({ actorUserId: g.session.userId, actorEmail: g.session.email, action: active ? "user.activated" : "user.deactivated", targetType: "admin_user", targetId: target.id, details: { targetRole: target.role } });
-      if (!active) await tx.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(eq(localAdminSessions.userId, target.id), eq(localAdminSessions.revokedAt, null as never)));
+      if (!active) await tx.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(eq(localAdminSessions.userId, target.id), isNull(localAdminSessions.revokedAt)));
       return NextResponse.json({ ok: true });
     });
   } catch { return fail("Could not update the user.", 503); }
