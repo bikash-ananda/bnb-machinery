@@ -14,7 +14,7 @@ function secret() {
   if (!s || s.length < 32) throw new Error("OTP_HASH_SECRET is not configured.");
   return s;
 }
-const key = (email: string) => "admin:" + email;
+const key = (email: string) => email;
 const hash = (email: string, code: string) => createHmac("sha256", secret()).update(key(email) + ":" + code).digest("hex");
 const sign = (p: string) => createHmac("sha256", secret()).update("admin-pending:" + p).digest("base64url");
 export const maskEmail = (e: string) => e.replace(/^(.).*(@.*)$/, "$1***$2");
