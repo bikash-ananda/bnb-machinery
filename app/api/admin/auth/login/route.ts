@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { rateLimited } from "@/lib/server/ai";
 import { isAllowedOrigin } from "@/lib/server/auth";
 import { db } from "@/src/db/client";
