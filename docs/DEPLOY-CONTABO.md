@@ -8,7 +8,7 @@ This project runs as a single Next.js standalone container behind Caddy. The web
 - Have a stable public IP/CIDR for the admin allowlist. The shipped example uses 203.0.113.1/32, a documentation-only address that intentionally blocks admin access until replaced.
 - Make sure the project changes intended for production are pushed to the repository's main branch before cloning it on the server.
 - Prepare the PostgreSQL database, persistent media volume, Resend sender credentials and OTP_HASH_SECRET. The application uses VPS PostgreSQL; no Supabase account or service-role key is required.
-- Verify a sender domain with Resend and set OTP_FROM_EMAIL. Admin sign-in requires email OTP, OTP_HASH_SECRET, and the Supabase admin-auth SQL migrations.
+- Verify a sender domain with Resend and set OTP_FROM_EMAIL. Admin sign-in requires email OTP, OTP_HASH_SECRET and the local PostgreSQL migrations.
 
 ## Harden the VPS
 
@@ -52,7 +52,7 @@ Never commit or send infra/.env.production to Git. This repository ignores .env*
 
 ## Initialize and start
 
-First apply the checked-in SQL under supabase/migrations/ to the configured Supabase project, in filename order. Then, from the app directory:
+From the app directory, run the application migrations against the VPS PostgreSQL database:
 
 ```sh
 docker compose -f infra/docker-compose.yml --env-file infra/.env.production config -q
@@ -72,7 +72,7 @@ Open https://DOMAIN after DNS has propagated. The basic health route is https://
 
 ## Create the requested Super Admin
 
-Run this after the Supabase admin-auth migration is applied and the production environment is configured. To create the account if it is new, enter a unique temporary password without putting it into shell history:
+Run this after the PostgreSQL migrations are applied and the production environment is configured. To create the account if it is new, enter a unique temporary password without putting it into shell history:
 
 ```sh
 cd /home/deploy/app
@@ -88,7 +88,7 @@ The bootstrap writes a scrypt hash and requires a password change at first login
 docker compose -f infra/docker-compose.yml --env-file infra/.env.production run --rm migrate node scripts/create-super-admin.mjs --promote bikashengineering100@gmail.com
 ```
 
-The account cannot complete sign-in until Resend, the verified sender, OTP_HASH_SECRET, and Supabase are configured.
+The account cannot complete sign-in until Resend, the verified sender, OTP_HASH_SECRET, and PostgreSQL are configured.
 
 ## Verify, back up, and update
 
