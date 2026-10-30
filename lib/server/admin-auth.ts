@@ -84,10 +84,10 @@ export async function revokeUserSessions(userId: string, exceptHash?: string) {
   if (exceptHash) conditions.push(ne(localAdminSessions.tokenHash, exceptHash));
   await db.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(...conditions));
 }
-export async function logAudit(actor: { email: string; role: string } | null, action: string, entity: string, entityId: string, detail: unknown, request?: Request, mustSucceed = false) {
+export async function logAudit(actor: { email: string; role: string; userId?: string } | null, action: string, entity: string, entityId: string, detail: unknown, request?: Request, mustSucceed = false) {
   try {
     await db.insert(localAdminAuditEvents).values({
-      actorEmail: actor?.email ?? null, action, targetType: entity, targetId: entityId,
+      actorUserId: actor?.userId ?? null, actorEmail: actor?.email ?? null, action, targetType: entity, targetId: entityId,
       details: { actorRole: actor?.role ?? null, detail: detail ?? null, ip: request ? clientIp(request) : null },
     });
   } catch (error) { if (mustSucceed) throw error; }
