@@ -35,7 +35,7 @@ export function isAllowedOrigin(request: Request) {
 function otpHash(email: string, code: string) {
   const secret = process.env.OTP_HASH_SECRET;
   if (!secret || secret.length < 32) throw new Error("OTP_HASH_SECRET is not configured.");
-  return createHmac("sha256", secret).update("staff:" + email + ":" + code).digest("hex");
+  return createHmac("sha256", secret).update(email + ":" + code).digest("hex");
 }
 export async function requestLoginOtp(email: string): Promise<{ status: string; code?: string }> {
   if (!process.env.DATABASE_URL) throw new BackendNotConfiguredError();
