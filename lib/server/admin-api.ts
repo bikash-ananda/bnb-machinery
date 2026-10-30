@@ -1,6 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { canAccess, type ModuleId } from "@/lib/admin/access";
 import { rateLimited } from "@/lib/server/ai";
 import { isAllowedOrigin } from "@/lib/server/auth";
