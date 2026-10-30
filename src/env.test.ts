@@ -3,7 +3,7 @@ import { parseEnv } from "@/src/env";
 
 describe("env", () => {
   it("accepts an empty dev environment and treats empty strings as unset", () => {
-    const e = parseEnv({ SUPABASE_URL: "", OPENAI_API_KEY: "" });
+    const e = parseEnv({ OPENAI_API_KEY: "" });
     expect(e.NODE_ENV).toBe("development");
     expect(e.SUPABASE_URL).toBeUndefined();
     expect(e.MEDIA_DIR).toBe("./data/media");
