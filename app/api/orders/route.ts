@@ -1,11 +1,8 @@
-import { randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { isAllowedOrigin } from "@/lib/server/auth";
 import { rateLimited } from "@/lib/server/ai";
 import { getShopProducts } from "@/lib/server/catalog";
-import { notifyNewOrder } from "@/lib/server/notify";
-import { dbRequest, hasSupabaseConfig } from "@/lib/server/supabase";
-import { createOrder } from "@/src/modules/sales/orders";
+import { createOrder, OrderError } from "@/src/modules/sales/orders";
 import { InsufficientStockError } from "@/src/modules/inventory/service";
 import { isPaymentProvider, paymentProviderName } from "@/lib/server/payment-qr";
 
@@ -17,6 +14,7 @@ const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) return fail("Request blocked.", 403);
   if (rateLimited(request, "order", 8)) return fail("Too many orders. Please wait a minute.", 429);
+  if (!process.env.DATABASE_URL) return fail("Order service is temporarily unavailable.", 503);
 
   let body: Record<string, unknown>;
   try { body = (await request.json()) as Record<string, unknown>; } catch { return fail("Invalid request."); }
@@ -43,68 +41,40 @@ export async function POST(request: Request) {
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail("Please enter a valid email or leave it empty.");
   if (delivery === "delivery" && address.length < 5) return fail("Please enter your delivery address.");
 
-  // Prices always come from the server catalogue, never from the browser.
-  const catalog = new Map((await getShopProducts()).map((p) => [p.id, p]));
-  const lines: { id: string; name: string; qty: number; price: number | null }[] = [];
-  for (const it of rawItems) {
-    const id = str((it as { id?: unknown }).id, 120);
-    const qty = Number((it as { qty?: unknown }).qty);
-    const p = catalog.get(id);
-    if (!p || !Number.isInteger(qty) || qty < 1 || qty > 99) return fail("An item in your cart is no longer available. Please refresh and try again.");
-    if (p.availability === "out") return fail(`“${p.name}” is out of stock.`);
-    lines.push({ id, name: p.name, qty, price: p.price });
+  // The browser never supplies trusted prices or product details.
+  const catalog = new Map((await getShopProducts()).map((product) => [product.id, product]));
+  const lines: { id: string; slug: string; name: string; qty: number; price: number | null }[] = [];
+  for (const item of rawItems) {
+    const id = str((item as { id?: unknown }).id, 120);
+    const qty = Number((item as { qty?: unknown }).qty);
+    const product = catalog.get(id);
+    if (!product || !Number.isInteger(qty) || qty < 1 || qty > 99) return fail("An item in your cart is no longer available. Please refresh and try again.");
+    if (product.availability === "out") return fail(`“${product.name}” is out of stock.`);
+    lines.push({ id, slug: product.slug, name: product.name, qty, price: product.price });
   }
 
-  const subtotal = lines.reduce((n, l) => n + (l.price ?? 0) * l.qty, 0);
-  let total = subtotal;
-  let unpriced = lines.filter((l) => l.price === null).length;
-  const d = new Date();
-  const yymmdd = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
-  let orderNo = `MTN-${yymmdd}-${randomInt(1000, 10000)}`;
-
-  let saved = false;
-  if (!process.env.DATABASE_URL && hasSupabaseConfig()) {
-    try {
-      await dbRequest("orders", {
-        method: "POST",
-        headers: { prefer: "return=minimal" },
-        body: JSON.stringify({
-          order_no: orderNo, customer_name: name, phone, email: email || null,
-          address: address || null, district: district || null, delivery_method: delivery,
-          payment_method: payment, note: note || null, items: lines, subtotal, unpriced_items: unpriced,
-        }),
-      });
-      saved = true;
-    } catch { saved = false; }
+  try {
+    const order = await createOrder({
+      channel: "WEB",
+      customer: { name, phone, email, address, district },
+      delivery, payment, note,
+      items: lines.map((line) => ({ slug: line.slug, qty: line.qty })),
+    });
+    const subtotal = lines.reduce((sum, line) => sum + (line.price ?? 0) * line.qty, 0);
+    return NextResponse.json({
+      orderNo: order.orderNo,
+      subtotal,
+      total: Number(order.totalPaisa) / 100,
+      unpriced: order.unpriced,
+      lines,
+      saved: true,
+      paymentProvider,
+      emailNotified: false,
+    });
+  } catch (error) {
+    if (error instanceof InsufficientStockError) return fail(error.message, 409);
+    if (error instanceof OrderError) return fail(error.message, 409);
+    console.error("PostgreSQL order creation failed:", error);
+    return fail("We could not save your order. Please try again or contact the shop.", 503);
   }
-
-  if (process.env.DATABASE_URL) {
-    try {
-      const o = await createOrder({
-        channel: "WEB",
-        customer: { name, phone, email, address, district },
-        delivery, payment, note,
-        items: lines.map((l) => ({ slug: l.id, qty: l.qty })),
-      });
-      orderNo = o.orderNo;
-      total = Number(o.totalPaisa) / 100;
-      unpriced = o.unpriced;
-      saved = true;
-    } catch (e) {
-      if (e instanceof InsufficientStockError) return fail(e.message, 409);
-      console.error("order save failed", e);
-    }
-  }
-
-  const summary = lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - Rs " + (l.price * l.qty).toLocaleString("en-IN") : " - price on request"}`).join("\n");
-  const paymentLabel = paymentProvider ? `${payment} (${paymentProviderName(paymentProvider)})` : payment;
-  let emailNotified = false;
-  if (!saved) emailNotified = await notifyNewOrder(
-    `New order ${orderNo} - ${name}`,
-    `Order ${orderNo}\nName: ${name}\nPhone: ${phone}\n${email ? "Email: " + email + "\n" : ""}${delivery === "pickup" ? "Pickup from shop" : "Deliver to: " + address + ", " + district}\nPayment: ${paymentLabel}\n\n${summary}\n\nSubtotal: Rs ${subtotal.toLocaleString("en-IN")}\nOrder total: Rs ${total.toLocaleString("en-IN")}${unpriced ? " (+" + unpriced + " item(s) price on request)" : ""}${note ? "\nNote: " + note : ""}`,
-  );
-
-  saved ||= emailNotified;
-
-  return NextResponse.json({ orderNo, subtotal, total, unpriced, lines, saved, paymentProvider, emailNotified });
 }

@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
-import { clearSessionCookie, getAdminSession, logAudit } from "@/lib/server/admin-auth";
+import { and, eq, isNull } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { db } from "@/src/db/client";
+import { localAdminSessions } from "@/src/modules/local-workflow/schema";
+import { clearSessionCookie, getAdminSession, logAudit, sha, ADMIN_COOKIE } from "@/lib/server/admin-auth";
 import { isAllowedOrigin } from "@/lib/server/auth";
-import { dbRequest } from "@/lib/server/supabase";
 
 export const runtime = "nodejs";
-
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) return NextResponse.json({ error: "Request blocked." }, { status: 403 });
-  const s = await getAdminSession();
-  if (s) {
-    try {
-      await dbRequest("admin_sessions?token_hash=eq." + s.tokenHash, { method: "PATCH", headers: { prefer: "return=minimal" }, body: JSON.stringify({ revoked_at: new Date().toISOString() }) });
-    } catch { /* cookie is cleared below regardless */ }
-    await logAudit(s, "logout", "admin_user", s.userId, null, request);
+  const session = await getAdminSession();
+  if (session) {
+    await db.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(eq(localAdminSessions.tokenHash, session.tokenHash), isNull(localAdminSessions.revokedAt)));
+    await logAudit(session, "logout", "admin_user", session.userId, null, request);
+  } else {
+    const token = (await cookies()).get(ADMIN_COOKIE)?.value;
+    if (token) await db.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(eq(localAdminSessions.tokenHash, sha(token)), isNull(localAdminSessions.revokedAt)));
   }
-  const res = NextResponse.json({ ok: true });
-  clearSessionCookie(res);
-  return res;
+  const response = NextResponse.json({ ok: true });
+  clearSessionCookie(response);
+  return response;
 }

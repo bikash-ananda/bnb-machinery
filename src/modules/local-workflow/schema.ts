@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createdAt, updatedAt } from "../../db/columns";
 
 /**
@@ -88,7 +88,22 @@ export const localAdminUsers = pgTable("local_admin_users", {
   passwordHash: text("password_hash").notNull(),
   active: boolean("active").notNull().default(true),
   mustChangePassword: boolean("must_change_password").notNull().default(true),
+  failedAttempts: integer("failed_attempts").notNull().default(0),
+  lockedUntil: timestamp("locked_until", { withTimezone: true }),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdBy: text("created_by"),
   createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+export const localAdminLoginOtps = pgTable("local_admin_login_otps", {
+  email: text("email").primaryKey(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  requestCount: integer("request_count").notNull().default(0),
+  requestWindowStartedAt: timestamp("request_window_started_at", { withTimezone: true }).notNull().defaultNow(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
   updatedAt: updatedAt(),
 });
 
