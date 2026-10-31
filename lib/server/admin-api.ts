@@ -69,5 +69,8 @@ export async function safeSelect<T>(resource: string): Promise<T[] | null> {
       }) as T[];
     }
     return null;
-  } catch { return null; }
+  } catch (error) {
+    console.error(`[admin] PostgreSQL read failed for ${resource.split("?", 1)[0] ?? "unknown resource"}:`, error);
+    throw new Error("The admin data service is temporarily unavailable.", { cause: error });
+  }
 }
