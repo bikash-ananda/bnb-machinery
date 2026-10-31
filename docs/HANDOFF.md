@@ -1,8 +1,9 @@
-# Handoff (rewrite at the end of every task; <=15 lines)
+# Handoff
 
-Done: Phase 0 tasks 0.1 and 0.2a (foundation libs + config + locales + tests; shop update 2: compare, saved, brands, bilingual shop UI, order emails).
-Next: 0.2b (migrate inline tr() strings to locales keys), then 0.3 (Drizzle + dev compose + CI), then 0.4 (Docker run of the current site).
-Gotchas: imports use `@/src/...` and `@/config/...` (alias `@/*` = repo root). Money is bigint paisa. tsconfig target is ES2022 (delete tsconfig.tsbuildinfo if stale errors appear).
-Rule: i18n keys must exist in BOTH locales/en.json and locales/ne.json (test fails otherwise).
-Commands: pnpm typecheck && pnpm lint && pnpm test
-Still on Supabase: lib/server/{supabase,inventory,auth}.ts (removed in Phase 1).
+Done: Production application uses PostgreSQL + Drizzle, Redis and persistent VPS media storage. Legacy hosted database/auth/storage runtime paths have been replaced.
+Deployment: PR #9 was merged to main and the PostgreSQL-backed release was deployed to the Contabo VPS. Drizzle migrations completed successfully.
+Data check: The checked legacy products, categories, brands, images and orders tables contained zero rows; the corresponding production catalog/order tables are also empty.
+Next: Finish obsolete environment/documentation cleanup, fix and verify the Next.js prerender route-cache write error, then test staff draft → owner review → publish end-to-end.
+Safety: Never delete volumes, reset databases, drop/truncate tables, or touch unrelated VPS projects. Preserve backups and untracked files.
+Architecture: Next.js + TypeScript, PostgreSQL 16 + Drizzle, Redis, Docker Compose and persistent media volume.
+Commands: pnpm typecheck && pnpm lint && pnpm test && pnpm build

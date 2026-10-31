@@ -1,6 +1,6 @@
 # B&B Machinery — shared Contabo VPS deployment
 
-This project runs on the existing multi-site Contabo VPS. The production domain is `bnbmachinery.com`. The app uses Next.js, PostgreSQL 16, Redis 7, Drizzle migrations, persistent local media storage and the existing host Caddy reverse proxy. Supabase is not used.
+This project runs on the existing multi-site Contabo VPS. The production domain is `bnbmachinery.com`. The app uses Next.js, PostgreSQL 16, Redis 7, Drizzle migrations, persistent local media storage and the existing host Caddy reverse proxy. PostgreSQL is the sole application database.
 
 ## Safety rules for this VPS
 
@@ -48,7 +48,7 @@ Use the confirmed host volume/source path to archive media. Do not guess the vol
 
 ## 3. Configure environment
 
-Keep the existing private file `infra/.env.production`; do not overwrite it with the example. Remove only the obsolete `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` entries after the PostgreSQL release is verified.
+Keep the existing private file `infra/.env.production`; do not overwrite it with the example. The file should contain only variables required by the current PostgreSQL, Redis, email, OTP, automation and explicitly enabled AI integrations. Remove obsolete database-provider settings after confirming the current release is healthy.
 
 Required production settings include:
 
@@ -108,12 +108,12 @@ This runs the checked-in additive Drizzle migrations before the web service star
 docker compose -p bnb-machinery -f infra/docker-compose.yml --env-file infra/.env.production ps
 docker compose -p bnb-machinery -f infra/docker-compose.yml --env-file infra/.env.production logs --tail=150 migrate web automation
 curl --fail http://127.0.0.1:3083/api/health
-curl --fail https://bnbmachinery.com/api/health
-curl --fail https://bnbmachinery.com/robots.txt
-curl --fail https://bnbmachinery.com/sitemap.xml
+curl --fail https://www.bnbmachinery.com/api/health
+curl --fail https://www.bnbmachinery.com/robots.txt
+curl --fail https://www.bnbmachinery.com/sitemap.xml
 ```
 
-Check the web logs for any Supabase hostname or `supabase.co/rest/v1` request. There should be none. Test public product browsing, order submission, admin login/OTP, password change, staff inventory authentication, image upload/read, reviews, and admin audit events.
+Check that application requests use only the configured PostgreSQL, Redis, email and explicitly enabled provider services. Test public product browsing, order submission, admin login/OTP, password change, staff inventory authentication, image upload/read, reviews, and admin audit events.
 
 ## 7. Backups and rollback
 
