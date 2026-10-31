@@ -1,5 +1,9 @@
-# First prompt for Claude Code (paste after running `claude` in the repo root)
+# Start prompt for repository work
 
-Read CLAUDE.md, docs/ARCHITECTURE.md and docs/ROADMAP.md fully. Then run the /next-task workflow for Phase 0, task 0.1.
-Before coding, tell me in 5 lines what you will change. Work on one task at a time and stop after each so I can test.
-Use pnpm. Do not touch Supabase code yet (that is Phase 1). Do not read any .env files.
+Read `CLAUDE.md`, `docs/HANDOFF.md`, `docs/ARCHITECTURE.md` and the current roadmap. Inspect the existing implementation before changing files.
+
+Use pnpm and the current Next.js, TypeScript, PostgreSQL, Drizzle and Redis architecture. PostgreSQL is the sole application database. Do not reintroduce hosted database, auth or storage SDKs.
+
+Work in a focused branch. Before coding, summarize the intended changes briefly. Preserve working functionality and existing production data. Never read or print private environment files. Never drop, truncate, reset databases or delete persistent volumes.
+
+Run typecheck, lint, tests and production build. Update the handoff and roadmap when work is complete.
