@@ -71,6 +71,13 @@
       "when": 1793461000000,
       "tag": "0009_local_admin_auth_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794550438729,
+      "tag": "0010_manual_payments",
+      "breakpoints": true
     }
   ]
 }
