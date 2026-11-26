@@ -9,11 +9,11 @@ import { services } from "@/data/services";
 export const metadata: Metadata = {
   title: "Machine Repair & Maintenance in Pokhara",
   description:
-    "Ask Machinery Tools Nepal about machinery repair, maintenance, installation support and spare parts in Pokhara and nearby districts.",
+    "Ask B & B Machinery about machinery repair, maintenance, installation support and spare parts in Pokhara and nearby districts.",
   alternates: { canonical: "/services" },
   ...pageSocialMetadata(
-    "Machine Repair & Maintenance in Pokhara | Machinery Tools Nepal",
-    "Machinery repair, maintenance, installation support and spare parts from Machinery Tools Nepal in Pokhara.",
+    "Machine Repair & Maintenance in Pokhara | B & B Machinery",
+    "Machinery repair, maintenance, installation support and spare parts from B & B Machinery in Pokhara.",
     "/services",
   ),
 };
