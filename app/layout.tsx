@@ -31,19 +31,19 @@ const nepaliFont = Noto_Sans_Devanagari({
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin),
   ...pageSocialMetadata(
-    "Machinery Tools Nepal | Machinery, Tools & Spare Parts in Pokhara",
+    "B & B Machinery | Machinery, Tools & Spare Parts in Pokhara",
     "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online or ask about current stock, service and wholesale pricing.",
     "/",
   ),
   title: {
-    default: "Machinery Tools Nepal",
-    template: "%s | Machinery Tools Nepal",
+    default: "B & B Machinery",
+    template: "%s | B & B Machinery",
   },
   description:
-    "Machinery Tools Nepal supplies machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online and ask about repair, maintenance and wholesale support.",
-  authors: [{ name: "Machinery Tools Nepal" }],
-  creator: "Machinery Tools Nepal",
-  publisher: "Machinery Tools Nepal",
+    "B & B Machinery supplies machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online and ask about repair, maintenance and wholesale support.",
+  authors: [{ name: "B & B Machinery" }],
+  creator: "B & B Machinery",
+  publisher: "B & B Machinery",
   robots: {
     index: true,
     follow: true,
