@@ -15,7 +15,7 @@ export function pageSocialMetadata(
   return {
     openGraph: {
       type: "website",
-      siteName: "Machinery Tools Nepal",
+      siteName: "B & B Machinery",
       locale: "en_NP",
       title,
       description,
