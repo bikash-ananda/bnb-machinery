@@ -8,10 +8,10 @@ import { getShopProducts } from "@/lib/server/catalog";
 export const metadata: Metadata = {
   title: "Machinery Brands & Categories in Nepal",
   description:
-    "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category at Machinery Tools Nepal in Pokhara.",
+    "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category at B & B Machinery in Pokhara.",
   alternates: { canonical: "/brands" },
   ...pageSocialMetadata(
-    "Machinery Brands & Categories in Nepal | Machinery Tools Nepal",
+    "Machinery Brands & Categories in Nepal | B & B Machinery",
     "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category.",
     "/brands",
   ),
