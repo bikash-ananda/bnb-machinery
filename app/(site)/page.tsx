@@ -16,10 +16,10 @@ import { npr } from "@/lib/shop/types";
 export const metadata: Metadata = {
   title: "Machinery & Power Tools in Pokhara",
   description:
-    "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse Machinery Tools Nepal online or ask about stock, service and wholesale pricing.",
+    "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse B & B Machinery online or ask about stock, service and wholesale pricing.",
   alternates: { canonical: "/" },
   ...pageSocialMetadata(
-    "Machinery & Power Tools in Pokhara | Machinery Tools Nepal",
+    "Machinery & Power Tools in Pokhara | B & B Machinery",
     "Shop machinery, agricultural equipment, power tools and spare parts in Pokhara. Browse online or ask about stock, service and wholesale pricing.",
     "/",
   ),
