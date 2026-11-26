@@ -6,10 +6,10 @@ import { pageSocialMetadata } from "@/lib/seo/metadata";
 export const metadata: Metadata = {
   title: "Machinery Shop Location in Pokhara",
   description:
-    "Visit Machinery Tools Nepal at Baglung Buspark, Pokhara. Find directions, call before you visit, and see the districts we serve.",
+    "Visit B & B Machinery at Baglung Buspark, Pokhara. Find directions, call before you visit, and see the districts we serve.",
   alternates: { canonical: "/location" },
   ...pageSocialMetadata(
-    "Machinery Shop Location in Pokhara | Machinery Tools Nepal",
+    "Machinery Shop Location in Pokhara | B & B Machinery",
     "Find our machinery and tools showroom at Baglung Buspark, Pokhara.",
     "/location",
   ),
@@ -23,7 +23,7 @@ export default function LocationPage() {
       <PageHero page="location" variant="road" eyebrow="Visit us" title="Find our showroom." text={`${l.address}, ${l.district}, ${l.province}`} />
       <section className="bg-[var(--surface)] px-6 py-16 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[2fr_1fr]">
-          <iframe title="Machinery Tools Nepal on Google Maps" src={`https://www.google.com/maps?q=${q}&output=embed`}
+          <iframe title="B & B Machinery on Google Maps" src={`https://www.google.com/maps?q=${q}&output=embed`}
             className="h-[420px] w-full rounded-2xl border border-slate-200 shadow-lg" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
           <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
             <h2 className="text-xl font-black">Get directions</h2>
