@@ -17,7 +17,12 @@ export async function POST(request: Request) {
   const email = normalizeEmail(body.email);
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 80) : "";
   if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || name.length < 2 || !isRole(body.role)) return fail("Enter a full email, a name and a valid role.");
-  if (!canCreateAdminRole(g.session.role, body.role)) return fail("Not allowed to create an account with that role.", 403);
+  if (!canCreateAdminRole(g.session.role, body.role)) {
+    if (g.session.role === "BUSINESS_OWNER" && (body.role === "SUPER_ADMIN" || body.role === "BUSINESS_OWNER")) {
+      return fail("Business Owners can create staff accounts, but cannot create privileged accounts.", 403);
+    }
+    return fail("Not allowed to create an account with that role.", 403);
+  }
   const tempPassword = generateTempPassword();
   try {
     const [created] = await db.insert(localAdminUsers).values({
@@ -65,6 +70,8 @@ export async function PATCH(request: Request) {
       if (body.action === "reset") {
         const tempPassword = generateTempPassword();
         await tx.update(localAdminUsers).set({ passwordHash: await hashPassword(tempPassword), mustChangePassword: true, failedAttempts: 0, lockedUntil: null, updatedAt: new Date() }).where(eq(localAdminUsers.id, target.id));
+        // Password reset invalidates every existing session for the target account.
+        await tx.update(localAdminSessions).set({ revokedAt: new Date() }).where(and(eq(localAdminSessions.userId, target.id), isNull(localAdminSessions.revokedAt)));
         await tx.insert((await import("@/src/modules/local-workflow/schema")).localAdminAuditEvents).values({ actorUserId: g.session.userId, actorEmail: g.session.email, action: "user.password_reset", targetType: "admin_user", targetId: target.id, details: { targetRole: target.role } });
         return NextResponse.json({ ok: true, tempPassword });
       }
