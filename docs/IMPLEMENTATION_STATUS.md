@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated: 2026-11-26  
+Updated: 2026-11-27  
 Audit baseline: `main` commit `2fa9b9e18fa7a750f707ef628d2caa454625bf6e`  
 Working phase branch: `feat/phase-1-company-master`
 
@@ -33,6 +33,10 @@ Repository implementation does not prove that every workflow has passed browser 
 6. The current company profile is still a TypeScript configuration object, not yet an owner-editable company master record in PostgreSQL.
 7. Product model, part number, application, detailed specifications, product document library, price history and warehouse/branch relationships require schema-by-schema verification before adding new migrations.
 8. `docs/IMPLEMENTATION_STATUS.md` previously reflected an October 31 deployment report. Live production health, current migration state, backups and public-domain SEO endpoints must be rechecked before any release.
+
+## Operating model decision — one branch
+
+B & B Machinery will operate with one business branch/location for the current scope. Do not build multi-branch management, branch transfers, branch-level financial books or branch selection into current workflows. Keep the existing stock-location ledger for the shop/store and internal storage zones only. Use one default stock location unless the owner later asks for separate internal locations. Future expansion may be designed as an optional extension, but must not complicate today's single-location operation.
 
 ## Phase 1 — Company and master-data foundation
 
@@ -137,6 +141,4 @@ Added explicit canonical catalog product part number and applications fields, in
 
 ## Phase 1 — CI follow-up (2026-11-27)
 
-The next CI run passed typecheck, lint (warnings only) and all 105 unit tests, but the production build still prerendered the homepage. The homepage reads the live catalogue, and its review flow reaches a PostgreSQL-backed API during prerender. The homepage is now request-rendered with `dynamic = "force-dynamic"`; the CI workflow must confirm this correction before the phase is considered build-green.
-
-Additional catalog validation tests now cover part numbers and application lists. No production migration, merge or deployment was performed.
+The homepage is now request-rendered with `dynamic = "force-dynamic"` because it reads the live PostgreSQL catalogue. The latest PR head `2d4974d08b9c7b6ce2db95275a271af05d78e071` has two completed GitHub Actions checks, both successful: `Typecheck, lint, tests and build` and `Typecheck, lint, tests and production build`. Additional catalog validation tests cover part numbers and application lists. This is CI verification only; no production migration, merge or deployment was performed.
