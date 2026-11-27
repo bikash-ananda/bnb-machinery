@@ -50,6 +50,18 @@ describe("catalog input validation", () => {
     expect(() => parseCatalogInput({ sku: "P1", nameEn: "Pump", images: ["https://example.com/a.jpg", "https://example.com/a.jpg"] })).toThrow(/duplicate/);
   });
 
+  it("validates product part numbers and application lists", () => {
+    const parsed = parseCatalogInput({
+      sku: "P-APP-1", nameEn: "Machine", partNumber: "PN-2026",
+      applications: ["Agriculture", "Workshop"],
+    });
+    expect(parsed.partNumber).toBe("PN-2026");
+    expect(parsed.applications).toEqual(["Agriculture", "Workshop"]);
+    expect(() => parseCatalogInput({ sku: "P-APP-2", nameEn: "Machine", applications: "Agriculture" })).toThrow(/applications/i);
+    expect(() => parseCatalogInput({ sku: "P-APP-3", nameEn: "Machine", applications: Array(31).fill("Use") })).toThrow(/30/);
+    expect(() => parseCatalogInput({ sku: "P-APP-4", nameEn: "Machine", applications: [""] })).toThrow(/required/);
+  });
+
   it("creates stable readable slugs and formats paisa safely", () => {
     expect(slugify("Water Pump 2 HP")).toBe("water-pump-2-hp");
     expect(moneyInput(123456n)).toBe("1234.56");
