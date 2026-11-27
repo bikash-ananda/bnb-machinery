@@ -10,6 +10,8 @@ export type CatalogInput = {
   category: string | null;
   brand: string | null;
   model: string | null;
+  partNumber: string | null;
+  applications: string[];
   unit: string;
   pricePaisa: bigint | null;
   mrpPaisa: bigint | null;
@@ -108,6 +110,8 @@ export function parseCatalogInput(value: unknown): CatalogInput {
     sku, barcode, nameEn, nameNe,
     descriptionEn: text(v.descriptionEn, 5000), descriptionNe: text(v.descriptionNe, 5000),
     category: text(v.category, 100), brand: text(v.brand, 100), model: text(v.model, 120),
+    partNumber: text(v.partNumber, 120),
+    applications: (() => { const raw = v.applications ?? []; if (!Array.isArray(raw) || raw.length > 30) throw new Error("Add no more than 30 applications."); return raw.map((item) => text(item, 160, true)!); })(),
     unit, pricePaisa, mrpPaisa, costPaisa,
     priceIncludesVat: bool(v.priceIncludesVat, true),
     vatApplicable: bool(v.vatApplicable, true),
