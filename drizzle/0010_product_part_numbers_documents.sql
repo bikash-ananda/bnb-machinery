@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS "product_documents" (
   "visibility" text DEFAULT 'PRIVATE' NOT NULL,
   "sort_order" integer DEFAULT 0 NOT NULL,
   "created_at" timestamp with time zone DEFAULT now() NOT NULL,
-  CONSTRAINT "product_documents_visibility_check" CHECK ("visibility" IN ('PRIVATE', 'PUBLIC'))
 );
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "product_documents_product_idx" ON "product_documents" ("product_id", "sort_order");
