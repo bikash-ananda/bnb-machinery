@@ -37,7 +37,7 @@ export async function listCatalog(input: { q?: string; categoryId?: string; bran
   const q = input.q?.trim().slice(0, 80);
   if (q) {
     const term = "%" + q.replace(/[\\%_]/g, "\\$&") + "%";
-    where.push(or(ilike(products.nameEn, term), ilike(products.nameNe, term), ilike(products.sku, term), ilike(products.barcode, term), ilike(products.model, term))!);
+    where.push(or(ilike(products.nameEn, term), ilike(products.nameNe, term), ilike(products.sku, term), ilike(products.barcode, term), ilike(products.model, term), ilike(products.partNumber, term))!);
   }
   if (input.categoryId) where.push(eq(products.categoryId, input.categoryId));
   if (input.brandId) where.push(eq(products.brandId, input.brandId));
@@ -47,7 +47,7 @@ export async function listCatalog(input: { q?: string; categoryId?: string; bran
   const [rows, count, categoryRows, brandRows] = await Promise.all([
     db.select({
       id: products.id, sku: products.sku, barcode: products.barcode, slug: products.slug,
-      nameEn: products.nameEn, nameNe: products.nameNe, model: products.model, unit: products.unit,
+      nameEn: products.nameEn, nameNe: products.nameNe, model: products.model, partNumber: products.partNumber, applications: products.applications, unit: products.unit,
       categoryId: products.categoryId, category: categories.nameEn, brandId: products.brandId, brand: brands.name,
       pricePaisa: products.pricePaisa, mrpPaisa: products.mrpPaisa, costPaisa: products.costPaisa,
       reorderLevel: products.reorderLevel, trackStock: products.trackStock, isPublished: products.isPublished,
@@ -83,7 +83,7 @@ export async function saveCatalogProduct(input: CatalogInput, actor: CatalogActo
     const values = {
       sku: input.sku, barcode: input.barcode, nameEn: input.nameEn, nameNe: input.nameNe,
       descriptionEn: input.descriptionEn, descriptionNe: input.descriptionNe, categoryId, brandId,
-      model: input.model, unit: input.unit, pricePaisa: input.pricePaisa, mrpPaisa: input.mrpPaisa,
+      model: input.model, partNumber: input.partNumber, applications: input.applications, unit: input.unit, pricePaisa: input.pricePaisa, mrpPaisa: input.mrpPaisa,
       costPaisa: input.costPaisa, priceIncludesVat: input.priceIncludesVat, vatApplicable: input.vatApplicable,
       taxCategory: input.taxCategory, hsCode: input.hsCode, reorderLevel: input.reorderLevel,
       trackStock: input.trackStock, isFeatured: input.isFeatured, specs: input.specs, updatedAt: new Date(),
@@ -128,7 +128,7 @@ export async function setCatalogPublished(productId: string, published: boolean,
 export async function getCatalogProduct(productId: string) {
   const [row] = await db.select({
     id: products.id, sku: products.sku, barcode: products.barcode, nameEn: products.nameEn, nameNe: products.nameNe,
-    descriptionEn: products.descriptionEn, descriptionNe: products.descriptionNe, model: products.model, unit: products.unit,
+    descriptionEn: products.descriptionEn, descriptionNe: products.descriptionNe, model: products.model, partNumber: products.partNumber, applications: products.applications, unit: products.unit,
     category: categories.nameEn, brand: brands.name, price: products.pricePaisa, mrp: products.mrpPaisa, cost: products.costPaisa,
     priceIncludesVat: products.priceIncludesVat, vatApplicable: products.vatApplicable, taxCategory: products.taxCategory,
     hsCode: products.hsCode, reorderLevel: products.reorderLevel, trackStock: products.trackStock, isFeatured: products.isFeatured,
