@@ -16,7 +16,10 @@ export const metadata: Metadata = {
     "/brands",
   ),
 };
-export const revalidate = 60;
+
+// Product data is loaded from PostgreSQL. Keep this page request-rendered so
+// CI/build environments do not need production database credentials.
+export const dynamic = "force-dynamic";
 
 function count(values: string[]) {
   const m = new Map<string, number>();
