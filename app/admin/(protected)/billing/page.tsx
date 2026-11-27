@@ -3,12 +3,14 @@ import { requireAdmin } from "@/lib/server/admin-auth";
 import { db } from "@/src/db/client";
 import { invoices, payments } from "@/src/modules/sales/schema";
 import { formatNPR } from "@/src/lib/money";
+import PaymentVerificationQueue from "@/components/admin/PaymentVerificationQueue";
+import PaymentAccountsManager from "@/components/admin/PaymentAccountsManager";
 
 export const metadata = { title: "Billing & accounts" };
 export const dynamic = "force-dynamic";
 
 export default async function BillingPage() {
-  await requireAdmin("billing");
+  const session = await requireAdmin("billing");
   let invoiceRows: {id:string;invoiceNo:string;fiscalYear:string;buyer:{name:string;phone?:string};issuedAt:Date;bsDate:string;totalPaisa:bigint;vatPaisa:bigint;status:string}[] = [];
   let paymentRows: {id:string;method:string;amountPaisa:bigint;reference:string|null;receivedAt:Date;createdBy:string|null}[] = [];
   let failed = false;
@@ -26,6 +28,8 @@ export default async function BillingPage() {
     <div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border bg-white p-4"><p className="text-xs font-bold uppercase text-slate-500">Invoices listed</p><p className="mt-2 text-2xl font-black">{invoiceRows.length}</p></div><div className="rounded-xl border bg-white p-4"><p className="text-xs font-bold uppercase text-slate-500">Invoice value (listed)</p><p className="mt-2 text-xl font-black">{formatNPR(total)}</p></div><div className="rounded-xl border bg-white p-4"><p className="text-xs font-bold uppercase text-slate-500">VAT (listed)</p><p className="mt-2 text-xl font-black">{formatNPR(vat)}</p></div></div>
     <section><h2 className="mb-3 text-lg font-black">Recent issued invoices</h2><div className="overflow-x-auto rounded-2xl border bg-white"><table className="min-w-[800px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Invoice</th><th className="p-3">Buyer</th><th className="p-3">AD date</th><th className="p-3">BS date</th><th className="p-3">Fiscal year</th><th className="p-3">VAT</th><th className="p-3">Total</th></tr></thead><tbody className="divide-y">{invoiceRows.map(i=><tr key={i.id}><td className="p-3 font-bold">{i.invoiceNo}</td><td className="p-3">{i.buyer.name}</td><td className="p-3 whitespace-nowrap">{new Date(i.issuedAt).toLocaleDateString()}</td><td className="p-3">{i.bsDate}</td><td className="p-3">{i.fiscalYear}</td><td className="p-3">{formatNPR(i.vatPaisa)}</td><td className="p-3">{formatNPR(i.totalPaisa)}</td></tr>)}</tbody></table>{!failed&&!invoiceRows.length&&<p className="p-6 text-sm text-slate-600">No invoices issued yet.</p>}</div></section>
     <section><h2 className="mb-3 text-lg font-black">Recent payments</h2><div className="overflow-x-auto rounded-2xl border bg-white"><table className="min-w-[600px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-3">Received</th><th className="p-3">Method</th><th className="p-3">Reference</th><th className="p-3">Amount</th></tr></thead><tbody className="divide-y">{paymentRows.map(p=><tr key={p.id}><td className="p-3">{new Date(p.receivedAt).toLocaleString()}</td><td className="p-3">{p.method}</td><td className="p-3">{p.reference||"—"}</td><td className="p-3">{formatNPR(p.amountPaisa)}</td></tr>)}</tbody></table>{!failed&&!paymentRows.length&&<p className="p-6 text-sm text-slate-600">No payments recorded yet.</p>}</div></section>
+    <PaymentVerificationQueue />
+    {["SUPER_ADMIN", "BUSINESS_OWNER", "MANAGER"].includes(session.role) && <PaymentAccountsManager />}
     <p className="text-xs text-slate-500">Issued invoices are immutable. Refunds and credit-note workflows are not exposed here.</p>
   </div>;
 }
