@@ -10,15 +10,15 @@ import { npr } from "@/lib/shop/types";
 
 export const metadata: Metadata = {
   title: "Deli Tools Distributor in Gandaki & Dhaulagiri",
-  description: "Machinery Tools Nepal is the main Deli distributor for Gandaki and Dhaulagiri. Browse Deli products or request dealer, wholesale and product availability information.",
+  description: "B & B Machinery is the main Deli distributor for Gandaki and Dhaulagiri. Browse Deli products or request dealer, wholesale and product availability information.",
   alternates: { canonical: "/brands/deli" },
   ...pageSocialMetadata(
-    "Deli Tools Distributor in Gandaki & Dhaulagiri | Machinery Tools Nepal",
-    "Browse Deli products or ask Machinery Tools Nepal about dealer, wholesale and product availability in Gandaki and Dhaulagiri.",
+    "Deli Tools Distributor in Gandaki & Dhaulagiri | B & B Machinery",
+    "Browse Deli products or ask B & B Machinery about dealer, wholesale and product availability in Gandaki and Dhaulagiri.",
     "/brands/deli",
   ),
 };
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function DeliPage() {
   const all = await getShopProducts();

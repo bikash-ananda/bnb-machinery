@@ -8,15 +8,18 @@ import { getShopProducts } from "@/lib/server/catalog";
 export const metadata: Metadata = {
   title: "Machinery Brands & Categories in Nepal",
   description:
-    "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category at Machinery Tools Nepal in Pokhara.",
+    "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category at B & B Machinery in Pokhara.",
   alternates: { canonical: "/brands" },
   ...pageSocialMetadata(
-    "Machinery Brands & Categories in Nepal | Machinery Tools Nepal",
+    "Machinery Brands & Categories in Nepal | B & B Machinery",
     "Browse machinery, agricultural equipment, mechanical tools and power tools by brand and category.",
     "/brands",
   ),
 };
-export const revalidate = 60;
+
+// Product data is loaded from PostgreSQL. Keep this page request-rendered so
+// CI/build environments do not need production database credentials.
+export const dynamic = "force-dynamic";
 
 function count(values: string[]) {
   const m = new Map<string, number>();

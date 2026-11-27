@@ -33,13 +33,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!p) return { title: "Product not found" };
   const productUrl = absoluteSiteUrl(`/products/${encodeURIComponent(p.slug)}`);
   const description = descriptionSnippet(
-    `${p.brand} ${p.name} in ${p.category}. ${p.description || "View product details."} Contact Machinery Tools Nepal in Pokhara for current price and availability.`,
+    `${p.brand} ${p.name} in ${p.category}. ${p.description || "View product details."} Contact B & B Machinery in Pokhara for current price and availability.`,
   );
   return {
     title: `${p.name} price & availability in Nepal`,
     description,
     alternates: { canonical: productUrl },
-    ...pageSocialMetadata(`${p.name} | Machinery Tools Nepal`, description, productUrl, p.image || undefined),
+    ...pageSocialMetadata(`${p.name} | B & B Machinery`, description, productUrl, p.image || undefined),
   };
 }
 
@@ -52,7 +52,7 @@ export default async function ProductPage({ params }: Props) {
   const related = all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4);
   const mrp = p.mrp ?? extras.mrp;
   const off = discountPct({ price: p.price, mrp });
-  const ask = `Hello Machinery Tools Nepal, I am interested in: ${p.name}${p.model ? " (" + p.model + ")" : ""}`;
+  const ask = `Hello B & B Machinery, I am interested in: ${p.name}${p.model ? " (" + p.model + ")" : ""}`;
 
   const ld = {
     "@context": "https://schema.org", "@type": "Product", name: p.name, description: p.description,

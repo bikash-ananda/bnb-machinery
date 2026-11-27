@@ -11,6 +11,8 @@ export type ShopProduct = {
   images: string[];
   description: string;
   model?: string;
+  partNumber?: string;
+  applications?: string[];
   specs: { name: string; value: string }[];
   price: number | null;
   marketPrice?: number | null;

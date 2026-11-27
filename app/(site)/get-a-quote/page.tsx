@@ -6,10 +6,10 @@ import { getShopProducts } from "@/lib/server/catalog";
 export const metadata: Metadata = {
   title: "Machinery, Tools & Spare Parts Quote",
   description:
-    "Request a price and availability check for machinery, tools or spare parts from Machinery Tools Nepal in Pokhara.",
+    "Request a price and availability check for machinery, tools or spare parts from B & B Machinery in Pokhara.",
   alternates: { canonical: "/get-a-quote" },
   ...pageSocialMetadata(
-    "Machinery, Tools & Spare Parts Quote | Machinery Tools Nepal",
+    "Machinery, Tools & Spare Parts Quote | B & B Machinery",
     "Request current pricing and availability for machinery, tools and spare parts from our Pokhara team.",
     "/get-a-quote",
   ),

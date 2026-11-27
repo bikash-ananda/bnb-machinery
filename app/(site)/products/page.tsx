@@ -7,11 +7,11 @@ import { productKind, type Kind } from "@/src/lib/search/engine";
 export const metadata: Metadata = {
   title: "Shop Machinery & Tools in Nepal",
   description:
-    "Browse machinery, agricultural equipment, power tools and spare parts from Machinery Tools Nepal in Pokhara. Check product details and contact us for price and availability.",
+    "Browse machinery, agricultural equipment, power tools and spare parts from B & B Machinery in Pokhara. Check product details and contact us for price and availability.",
   alternates: { canonical: "/products" },
   ...pageSocialMetadata(
-    "Shop Machinery & Tools in Nepal | Machinery Tools Nepal",
-    "Browse machinery, agricultural equipment, power tools and spare parts from Machinery Tools Nepal in Pokhara.",
+    "Shop Machinery & Tools in Nepal | B & B Machinery",
+    "Browse machinery, agricultural equipment, power tools and spare parts from B & B Machinery in Pokhara.",
     "/products",
   ),
 };

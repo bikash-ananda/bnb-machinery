@@ -7,10 +7,10 @@ import { gallery } from "@/data/gallery";
 
 export const metadata: Metadata = {
   title: "Machinery & Tools Showroom Gallery",
-  description: "See machinery, tools and equipment at Machinery Tools Nepal's showroom in Pokhara.",
+  description: "See machinery, tools and equipment at B & B Machinery's showroom in Pokhara.",
   alternates: { canonical: "/gallery" },
   ...pageSocialMetadata(
-    "Machinery & Tools Showroom Gallery | Machinery Tools Nepal",
+    "Machinery & Tools Showroom Gallery | B & B Machinery",
     "See machinery, tools and equipment at our showroom in Pokhara.",
     "/gallery",
   ),

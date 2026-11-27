@@ -1,8 +1,9 @@
-// Company profile + navigation. Edit here (later: overridden by the `settings` table in the admin console).
+// Confirmed B & B Machinery business profile.
+// Keep unverified social links empty until the owner supplies the official URLs.
 export const company = {
-  name: "Machinery Tools Nepal",
-  shortName: "Machinery Tools Nepal",
-  legalName: "B & B Machinery Suppliers",
+  name: "B & B Machinery",
+  shortName: "B & B Machinery",
+  legalName: "B And B Machinery Suppliers",
 
   location: {
     address: "Baglung Buspark, Pokhara",
@@ -22,7 +23,7 @@ export const company = {
 
   social: {
     facebook: "",
-    tiktok: "https://www.tiktok.com/@bandbmachinerysuppliers?_r=1&_t=ZS-9ADz122d9y1",
+    tiktok: "",
   },
 
   serviceAreas: ["Kaski", "Baglung", "Mustang", "Syangja"],

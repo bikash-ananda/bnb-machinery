@@ -7,10 +7,10 @@ import { pageSocialMetadata } from "@/lib/seo/metadata";
 export const metadata: Metadata = {
   title: "Get a Machinery Quote in Pokhara",
   description:
-    "Contact Machinery Tools Nepal in Pokhara for machinery, power tools, spare parts, service support, wholesale pricing and product availability.",
+    "Contact B & B Machinery in Pokhara for machinery, power tools, spare parts, service support, wholesale pricing and product availability.",
   alternates: { canonical: "/contact" },
   ...pageSocialMetadata(
-    "Get a Machinery Quote in Pokhara | Machinery Tools Nepal",
+    "Get a Machinery Quote in Pokhara | B & B Machinery",
     "Contact our Pokhara team about machinery, tools, spare parts, service and wholesale pricing.",
     "/contact",
   ),
