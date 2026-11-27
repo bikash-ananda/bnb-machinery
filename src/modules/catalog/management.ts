@@ -146,7 +146,7 @@ export async function getCatalogProduct(productId: string) {
 export async function getPublicCatalogProducts() {
   const rows = await db.select({
     id: products.id, slug: products.slug, name: products.nameEn, nameNe: products.nameNe,
-    description: products.descriptionEn, model: products.model, brand: brands.name, category: categories.nameEn,
+    description: products.descriptionEn, model: products.model, partNumber: products.partNumber, applications: products.applications, brand: brands.name, category: categories.nameEn,
     pricePaisa: products.pricePaisa, mrpPaisa: products.mrpPaisa, isFeatured: products.isFeatured,
     trackStock: products.trackStock, specs: products.specs,
   }).from(products)
@@ -170,7 +170,7 @@ export async function getPublicCatalogProducts() {
       id: row.id, slug: row.slug, name: row.name, nameNe: row.nameNe ?? undefined,
       brand: row.brand ?? "Unspecified brand", category: row.category ?? "Machinery",
       image: productImages[0] ?? "", images: productImages, description: row.description ?? "",
-      model: row.model ?? undefined, specs: row.specs ?? [],
+      model: row.model ?? undefined, partNumber: row.partNumber ?? undefined, applications: row.applications ?? [], specs: row.specs ?? [],
       price: row.pricePaisa === null ? null : Number(row.pricePaisa) / 100,
       mrp: row.mrpPaisa === null ? null : Number(row.mrpPaisa) / 100,
       availability: row.trackStock ? (available && available > 0 ? "in" as const : "out" as const) : "ask" as const,
