@@ -65,3 +65,8 @@ assistant_policies(key, text_en/ne)   -- FAQs/policies the bot may quote; nothin
 The transactional catalog now has explicit product `part_number` and `applications` fields, plus a `product_documents` metadata table. Product documents are private by default and store a storage path rather than a public URL. Any future download route must authenticate/authorize access and explicitly allow only approved public brochure visibility.
 
 Existing inventory-workflow products already had part number and applications fields; this additive change brings the canonical commerce catalog into alignment without deleting or rewriting workflow records.
+
+
+## Operating location policy
+
+The current business workflow is intentionally single-branch. `stock_locations` represents the primary shop/store and, only if operationally needed, internal storage zones within that same location. Do not introduce branch entities, branch transfers, branch-level stock ownership or branch-specific accounting in the current implementation. The existing ledger remains the source of truth for stock movements and balances.
