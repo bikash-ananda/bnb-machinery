@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS "product_documents" (
   "mime_type" text NOT NULL,
   "visibility" text DEFAULT 'PRIVATE' NOT NULL,
   "sort_order" integer DEFAULT 0 NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "product_documents_product_idx" ON "product_documents" ("product_id", "sort_order");
