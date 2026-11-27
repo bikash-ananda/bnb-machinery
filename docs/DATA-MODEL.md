@@ -58,3 +58,10 @@ outbox(event, payload jsonb, status, attempts, run_at), jobs history handled by 
 message_threads(channel, external_id, customer_id, status: bot|human|closed), messages(thread_id, direction, body, meta, at)
 notification_templates(key, locale, channel, subject, body), notifications(to, channel, template_key, status, at)
 assistant_policies(key, text_en/ne)   -- FAQs/policies the bot may quote; nothing else is "facts"
+
+
+## Implemented catalog extensions (Phase 1)
+
+The transactional catalog now has explicit product `part_number` and `applications` fields, plus a `product_documents` metadata table. Product documents are private by default and store a storage path rather than a public URL. Any future download route must authenticate/authorize access and explicitly allow only approved public brochure visibility.
+
+Existing inventory-workflow products already had part number and applications fields; this additive change brings the canonical commerce catalog into alignment without deleting or rewriting workflow records.
