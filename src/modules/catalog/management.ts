@@ -168,7 +168,7 @@ export async function getPublicCatalogProducts() {
     const available = row.trackStock ? Math.max(0, availability.get(row.id) ?? 0) : null;
     return {
       id: row.id, slug: row.slug, name: row.name, nameNe: row.nameNe ?? undefined,
-      brand: row.brand ?? "Machinery Tools Nepal", category: row.category ?? "Machinery",
+      brand: row.brand ?? "Unspecified brand", category: row.category ?? "Machinery",
       image: productImages[0] ?? "", images: productImages, description: row.description ?? "",
       model: row.model ?? undefined, specs: row.specs ?? [],
       price: row.pricePaisa === null ? null : Number(row.pricePaisa) / 100,
