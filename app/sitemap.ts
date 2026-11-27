@@ -2,7 +2,9 @@ import type { MetadataRoute } from "next";
 import { absoluteSiteUrl } from "@/lib/seo/site-url";
 import { getShopProducts } from "@/lib/server/catalog";
 
-export const revalidate = 3600;
+// The product list is database-backed. Generate the sitemap at request time
+// rather than requiring a production PostgreSQL connection during CI builds.
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const pages = [
@@ -10,7 +12,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/about",
     "/products",
     "/brands",
-    "/brands/deli",
     "/services",
     "/gallery",
     "/get-a-quote",
