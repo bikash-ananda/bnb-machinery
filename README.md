@@ -1,17 +1,25 @@
 # B & B Machinery
 
-B & B Machinery is a self-hosted Next.js business website and machinery platform. Production data is stored in PostgreSQL and accessed through Drizzle ORM. Redis supports background work; product media is stored on persistent VPS storage.
+B & B Machinery is a Next.js business website and machinery platform. The Contabo VPS hosts the application, private business database and confidential media. See the [external public data architecture](docs/EXTERNAL_PUBLIC_DATA_ARCHITECTURE.md) for the approved future separation of public files and public catalog data.
 
-## Production architecture
+## Current production architecture
 
 - Application: Next.js App Router, TypeScript and React
-- Database: PostgreSQL 16
-- Database access and migrations: Drizzle ORM / drizzle-kit
+- Private business database: PostgreSQL 16 on the Contabo VPS, accessed through Drizzle ORM
 - Cache and background jobs: Redis
-- Persistent uploads: local media volume mounted at `/data/media`
+- Current media storage: private persistent VPS volume mounted at `/data/media`
 - Deployment: Docker Compose on the Contabo VPS, behind the existing host Caddy reverse proxy
 
-The application has no external hosted database, storage SDK, or vendor-specific database runtime dependency.
+## Approved target architecture (not active yet)
+
+- Public approved media: Cloudflare R2
+- Public product catalog read model: Neon PostgreSQL
+- Private customer, supplier, sales, purchase, accounting, payment, admin and audit data: existing VPS PostgreSQL
+- Draft/unapproved and confidential files: existing private VPS media storage
+
+Neon must not replace the private `DATABASE_URL`. The public catalog will receive only an explicit allowlist of published fields through a server-side synchronization process. Public media migration is limited to approved/published files. No external service is enabled by adding the example environment variables alone.
+
+The R2/Neon integration is not active until its adapters, tests, staging environment and owner-approved production rollout are complete. Never place R2 or Neon credentials in `NEXT_PUBLIC_*` variables or source control.
 
 ## Inventory workflow
 
@@ -22,7 +30,7 @@ The application has no external hosted database, storage SDK, or vendor-specific
 5. An authorized owner reviews, edits, approves, rejects, or requests corrections.
 6. Only products meeting the required approval and publication states appear in the public catalog.
 
-Inventory media is stored on the persistent VPS media volume. The inventory editor identity and role rules are enforced server-side. The owner identity is configured through the server environment.
+Draft and private inventory media remain on the private VPS storage. Public R2 publishing is a separate owner-approved operation.
 
 ## Admin AI assistant
 
@@ -34,7 +42,7 @@ Configure AI providers only through server-side environment variables. Never exp
 
 Production configuration is stored privately at `infra/.env.production` on the VPS. Do not commit it, overwrite it with the example file, or paste its values into chat.
 
-Required settings include PostgreSQL and Redis connection details, application origin, OTP hashing secret, owner email, email delivery credentials, and any explicitly enabled AI provider credentials. Use `.env.example` as a variable-name reference only.
+Use `.env.example` and `infra/.env.production.example` as variable-name references only. External R2/Neon placeholders are intentionally empty and all related feature switches default to `false`.
 
 Generate strong secrets on the server with `openssl rand -hex 32`. Configure email delivery with a verified sender before enabling staff OTP login.
 
