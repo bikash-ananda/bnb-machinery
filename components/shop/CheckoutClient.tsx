@@ -8,21 +8,11 @@ import { cartTotal, clearCart, unpricedCount, useShop } from "@/lib/shop/store";
 import { useTr } from "@/lib/shop/tr";
 import { npr } from "@/lib/shop/types";
 
-type Done = { orderNo: string; subtotal: number; total: number; unpriced: number; lines: { name: string; qty: number; price: number | null }[]; saved: boolean; paymentProvider?: PaymentProvider | null };
+type Done = { orderNo: string; subtotal: number; total: number; unpriced: number; lines: { name: string; qty: number; price: number | null }[]; saved: boolean };
 type Pay = "cod" | "shop" | "digital";
-type PaymentProvider = "adbl" | "nabil" | "esewa";
-const PAY_EN: Record<Pay, string> = { cod: "Cash on delivery", shop: "Pay at the shop", digital: "Bank or eSewa QR" };
-const PAY_NE: Record<Pay, string> = { cod: "डेलिभरीमा नगद", shop: "पसलमा तिर्ने", digital: "बैंक वा eSewa QR" };
-const QR_METHODS: Record<PaymentProvider, { label: string; payee: string; detail: string }> = {
-  adbl: { label: "ADBL Bank", payee: "B AND B MACHINARY SUPPLIERS", detail: "Scan the B&B merchant QR" },
-  nabil: { label: "Nabil Bank", payee: "Bikash Bhattarai", detail: "Scan the B&B merchant QR" },
-  esewa: { label: "eSewa", payee: "Bikash Bhattarai", detail: "Scan the B&B merchant QR" },
-};
-const QR_IMAGES: Record<PaymentProvider, string> = {
-  adbl: "/images/payments/adbl-bank.jpg",
-  nabil: "/images/payments/nabil-bank.jpg",
-  esewa: "/images/payments/esewa.jpg",
-};
+type PaymentAccount = { id: string; label: string; method: string; payeeName: string; accountNo: string | null; instructions: string | null; qrUrl: string | null };
+const PAY_EN: Record<Pay, string> = { cod: "Cash on delivery", shop: "Pay at the shop", digital: "Bank or wallet transfer" };
+const PAY_NE: Record<Pay, string> = { cod: "डेलिभरीमा नगद", shop: "पसलमा तिर्ने", digital: "बैंक वा वालेटबाट भुक्तानी" };
 
 export default function CheckoutClient() {
   const tr = useTr();
@@ -30,16 +20,36 @@ export default function CheckoutClient() {
   const [f, setF] = useState({ name: "", phone: "", email: "", address: "", district: company.serviceAreas[0] ?? "", note: "" });
   const [delivery, setDelivery] = useState<"delivery" | "pickup">("delivery");
   const [payment, setPayment] = useState<Pay>("cod");
-  const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>("adbl");
+  const [paymentAccounts, setPaymentAccounts] = useState<PaymentAccount[]>([]);
+  const [selectedPaymentAccountId, setSelectedPaymentAccountId] = useState("");
+  const [paymentClaimBusy, setPaymentClaimBusy] = useState(false);
+  const [paymentClaimMessage, setPaymentClaimMessage] = useState("");
+  const [paymentClaimError, setPaymentClaimError] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [paymentReference, setPaymentReference] = useState("");
-  const [custom, setCustom] = useState<{ name: string; phone: string; delivery: string; address: string; district: string; payment: string; paymentProvider: PaymentProvider | null; note: string } | null>(null);
+  const [custom, setCustom] = useState<{ name: string; phone: string; delivery: string; address: string; district: string; payment: string; paymentAccount: PaymentAccount | null; note: string } | null>(null);
 
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
   const input = "mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200";
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/payment-accounts", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Payment accounts are unavailable.");
+        if (active) {
+          const accounts = (data.accounts ?? []) as PaymentAccount[];
+          setPaymentAccounts(accounts);
+          setSelectedPaymentAccountId(accounts[0]?.id ?? "");
+        }
+      })
+      .catch(() => { if (active) setPaymentAccounts([]); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!qrOpen) return;
@@ -53,17 +63,23 @@ export default function CheckoutClient() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    setErr(""); setBusy(true);
+    setErr("");
+    const selectedAccount = paymentAccounts.find((account) => account.id === selectedPaymentAccountId) ?? null;
+    if (payment === "digital" && !selectedAccount) {
+      setErr(tr("Online payment is not configured yet. Choose another method or contact us.", "अनलाइन भुक्तानी सुविधा अहिले सेट गरिएको छैन। अर्को विधि छान्नुहोस् वा सम्पर्क गर्नुहोस्।"));
+      return;
+    }
+    setBusy(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: s.cart.map((c) => ({ id: c.id, qty: c.qty })), customer: f, delivery, payment, paymentProvider: payment === "digital" ? paymentProvider : undefined, note: f.note }),
+        body: JSON.stringify({ items: s.cart.map((c) => ({ id: c.id, qty: c.qty })), customer: f, delivery, payment, note: f.note }),
       });
       const data = (await res.json()) as Done & { error?: string };
       if (!res.ok) { setErr(data.error || tr("Something went wrong. Please try again or call us.", "केही गडबड भयो। फेरि प्रयास गर्नुहोस् वा फोन गर्नुहोस्।")); return; }
-      setCustom({ name: f.name, phone: f.phone, delivery, address: f.address, district: f.district, payment: PAY_EN[payment], paymentProvider: payment === "digital" ? paymentProvider : null, note: f.note });
+      setCustom({ name: f.name, phone: f.phone, delivery, address: f.address, district: f.district, payment: PAY_EN[payment], paymentAccount: payment === "digital" ? selectedAccount : null, note: f.note });
       setDone(data);
-      setQrOpen(payment === "digital" && data.saved && data.unpriced === 0 && data.total > 0);
+      setQrOpen(payment === "digital" && !!selectedAccount && data.saved && data.unpriced === 0 && data.total > 0);
       clearCart();
     } catch {
       setErr(tr("Network problem. Please try again or call us.", "नेटवर्क समस्या। फेरि प्रयास गर्नुहोस् वा फोन गर्नुहोस्।"));
@@ -72,33 +88,48 @@ export default function CheckoutClient() {
     }
   }
 
+  async function sendPaymentReference(event: React.FormEvent) {
+    event.preventDefault();
+    if (!done || !custom?.paymentAccount || paymentClaimBusy || paymentClaimMessage) return;
+    setPaymentClaimBusy(true); setPaymentClaimError(""); setPaymentClaimMessage("");
+    try {
+      const response = await fetch("/api/payments/submit", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ orderNo: done.orderNo, phone: custom.phone, txnId: paymentReference, accountId: custom.paymentAccount.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not submit payment reference.");
+      setPaymentClaimMessage(tr("Reference submitted. It is pending until B&B verifies the transfer.", "सन्दर्भ पठाइयो। B&B ले कारोबार पुष्टि नगरेसम्म यो जाँचको प्रतीक्षामा रहनेछ।"));
+    } catch (error) { setPaymentClaimError(error instanceof Error ? error.message : "Could not submit payment reference."); }
+    finally { setPaymentClaimBusy(false); }
+  }
+
   if (done && custom) {
     const lines = done.lines.map((l, i) => `${i + 1}. ${l.name} x ${l.qty}${l.price !== null ? " - " + npr(l.price * l.qty) : " - price on request"}`).join("\n");
-    const provider = done.paymentProvider ?? custom.paymentProvider;
+    const paymentAccount = custom.paymentAccount;
     const payable = done.total ?? done.subtotal;
-    const text = `New order ${done.orderNo}\nName: ${custom.name}\nPhone: ${custom.phone}\n${custom.delivery === "pickup" ? "Pickup from shop" : `Deliver to: ${custom.address}, ${custom.district}`}\nPayment: ${custom.payment}${custom.paymentProvider ? ` (${QR_METHODS[custom.paymentProvider].label})` : ""}\n\nItems:\n${lines}\n\nTotal: ${payable > 0 ? npr(payable) : "-"}${done.unpriced ? ` (+${done.unpriced} item(s) price on request)` : ""}${custom.note ? "\nNote: " + custom.note : ""}`;
-    const paymentText = `${text}\n\nPayment reference supplied by customer: ${paymentReference.trim()}\nPlease verify the transfer directly in the merchant account before marking this order paid.`;
+    const text = `New order ${done.orderNo}\nName: ${custom.name}\nPhone: ${custom.phone}\n${custom.delivery === "pickup" ? "Pickup from shop" : `Deliver to: ${custom.address}, ${custom.district}`}\nPayment: ${custom.payment}${paymentAccount ? ` (${paymentAccount.label})` : ""}\n\nItems:\n${lines}\n\nTotal: ${payable > 0 ? npr(payable) : "-"}${done.unpriced ? ` (+${done.unpriced} item(s) price on request)` : ""}${custom.note ? "\nNote: " + custom.note : ""}`;
     return (
       <div className="mx-auto max-w-2xl space-y-5 rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-lg">
         <p className="text-5xl">✅</p>
         <h2 className="mt-3 text-3xl font-black">{tr(done.saved ? "Order received" : "Order details ready", done.saved ? "अर्डर प्राप्त भयो" : "अर्डर विवरण तयार भयो")}</h2>
         <p className="mt-2 text-slate-600">{tr(done.saved ? "Your order number is" : "Your reference number is", done.saved ? "तपाईंको अर्डर नम्बर" : "तपाईंको सन्दर्भ नम्बर")}</p>
         <p className="mt-1 text-2xl font-black tracking-wider text-amber-600">{done.orderNo}</p>
-        {provider && done.unpriced === 0 && done.saved ? (
+        {paymentAccount && done.unpriced === 0 && done.saved ? (
           <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-left">
             <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:justify-between sm:text-left">
               <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">{tr(`${QR_METHODS[provider].label} payment`, `${QR_METHODS[provider].label} भुक्तानी`)}</p>
+                <p className="text-sm font-bold uppercase tracking-wide text-emerald-800">{tr(`${paymentAccount.label} payment`, `${paymentAccount.label} भुक्तानी`)}</p>
                 <p className="mt-1 text-2xl font-black text-slate-950">{npr(payable)}</p>
-                <p className="text-sm text-slate-600">{QR_METHODS[provider].payee}</p>
+                <p className="text-sm text-slate-600">{paymentAccount.payeeName}</p>
               </div>
               <button type="button" onClick={() => setQrOpen(true)} className="rounded-xl bg-emerald-700 px-5 py-3 font-extrabold text-white hover:bg-emerald-800">{tr("Show payment QR", "भुक्तानी QR देखाउनुहोस्")}</button>
             </div>
             <p className="mt-3 text-xs leading-5 text-slate-700">{tr("The QR is a static merchant QR and cannot encode this order's amount. Enter the confirmed bill amount shown here in your payment app. Your order stays pending until B&B verifies the transfer.", "यो स्थिर व्यापारी QR हो र यसले अर्डरको रकम समावेश गर्न सक्दैन। भुक्तानी एपमा यहाँ देखाइएको पुष्टि भएको बिल रकम आफैँ राख्नुहोस्। B&B ले कारोबार पुष्टि नगरेसम्म अर्डर बाँकी अवस्थामा रहन्छ।")}</p>
           </section>
-        ) : provider && done.unpriced > 0 ? (
+        ) : paymentAccount && done.unpriced > 0 ? (
           <p className="rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-950">{tr("This order contains items awaiting B&B pricing or stock confirmation. Any online market rates shown are references only. Please do not transfer money yet. Our team will confirm your final bill and payment instructions first; the attached merchant QR is static and cannot fill the amount automatically.", "यस अर्डरका वस्तुको B&B मूल्य वा स्टक पुष्टि हुन बाँकी छ। देखाइएका अनलाइन बजारका मूल्य सन्दर्भ मात्र हुन्। अहिले रकम नपठाउनुहोस्। हाम्रो टोलीले पहिले अन्तिम बिल र भुक्तानी निर्देशन पुष्टि गर्नेछ; संलग्न व्यापारी QR स्थिर हो र रकम आफैँ भर्दैन।")}</p>
-        ) : provider ? (
+        ) : paymentAccount ? (
           <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-950">{tr("We could not confirm that the order was saved. Please contact B&B before making a payment.", "अर्डर सुरक्षित भएको पुष्टि गर्न सकेनौँ। भुक्तानी गर्नुअघि B&B मा सम्पर्क गर्नुहोस्।")}</p>
         ) : done.saved ? (
           <p className="mt-4 text-sm text-slate-600">{tr("Send this order on WhatsApp so our team can confirm the final price, delivery and payment with you.", "अन्तिम मूल्य, डेलिभरी र भुक्तानी पुष्टि गर्न यो अर्डर WhatsApp मा पठाउनुहोस्।")}</p>
@@ -112,25 +143,31 @@ export default function CheckoutClient() {
         </div>
         <p className="mt-5 text-xs text-slate-500">{tr("Please save your order number for any follow-up.", "अर्डर सम्बन्धी सोधपुछका लागि अर्डर नम्बर सुरक्षित राख्नुहोस्।")}</p>
         <Link href="/products" className="mt-4 inline-block text-sm font-bold text-amber-600">{tr("Continue shopping", "किनमेल जारी राख्नुहोस्")}</Link>
-        {qrOpen && provider && done.saved && done.unpriced === 0 && (
+        {qrOpen && paymentAccount && done.saved && done.unpriced === 0 && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) setQrOpen(false); }}>
             <section role="dialog" aria-modal="true" aria-labelledby="payment-qr-title" className="my-auto w-full max-w-xl rounded-3xl bg-white p-5 text-left shadow-2xl sm:p-7">
               <div className="flex items-start justify-between gap-4">
-                <div><p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">{tr("Secure payment handoff", "सुरक्षित भुक्तानी प्रक्रिया")}</p><h3 id="payment-qr-title" className="mt-1 text-2xl font-black text-slate-950">{QR_METHODS[provider].label}</h3></div>
+                <div><p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">{tr("Secure payment handoff", "सुरक्षित भुक्तानी प्रक्रिया")}</p><h3 id="payment-qr-title" className="mt-1 text-2xl font-black text-slate-950">{paymentAccount.label}</h3></div>
                 <button type="button" onClick={() => setQrOpen(false)} aria-label={tr("Close payment QR", "भुक्तानी QR बन्द गर्नुहोस्")} className="rounded-full border border-slate-200 px-3 py-1 text-xl font-bold text-slate-600 hover:bg-slate-100">×</button>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_1fr] sm:items-center">
                 <div className="rounded-2xl bg-slate-50 p-4 text-center">
-                  <img src={QR_IMAGES[provider]} alt={`${QR_METHODS[provider].label} static merchant QR for B&B Machinery`} width={280} height={280} className="mx-auto aspect-square w-full max-w-[260px] rounded-xl border border-slate-200 bg-white object-contain p-2" />
-                  <p className="mt-2 text-xs font-bold text-slate-600">{QR_METHODS[provider].payee}</p>
+                  {paymentAccount.qrUrl ? <img src={paymentAccount.qrUrl} alt={paymentAccount.label + " merchant QR"} width={280} height={280} className="mx-auto aspect-square w-full max-w-[260px] rounded-xl border border-slate-200 bg-white object-contain p-2" /> : <p className="rounded-xl border border-dashed p-8 text-sm text-slate-500">No QR image uploaded for this account.</p>}
+                  <p className="mt-2 text-xs font-bold text-slate-600">{paymentAccount.payeeName}</p>
+                  {paymentAccount.accountNo && <p className="mt-1 text-xs text-slate-600">{paymentAccount.accountNo}</p>}
+                  {paymentAccount.instructions && <p className="mt-2 text-xs text-slate-600">{paymentAccount.instructions}</p>}
                 </div>
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-emerald-800">{tr("Confirmed bill amount", "पुष्टि भएको बिल रकम")}</p><p className="mt-1 text-3xl font-black text-slate-950">{npr(payable)}</p><p className="mt-1 text-xs text-slate-600">{tr("Order", "अर्डर")}: {done.orderNo}</p></div>
                   <p className="text-xs leading-5 text-slate-700">{tr("This uploaded merchant QR is static: the amount and order number are not encoded in the QR. Check the payee name, scan it, and enter the amount shown above yourself. Delivery is confirmed separately.", "अपलोड गरिएको व्यापारी QR स्थिर हो: रकम र अर्डर नम्बर QR मा समावेश छैनन्। पाउने व्यक्तिको नाम जाँचेर QR स्क्यान गर्नुहोस् र माथिको रकम आफैँ राख्नुहोस्। डेलिभरी छुट्टै पुष्टि हुन्छ।")}</p>
                 </div>
               </div>
-              <label className="mt-5 block text-sm font-bold text-slate-800">{tr("Payment transaction reference", "भुक्तानी कारोबार सन्दर्भ")}<input className={input} value={paymentReference} onChange={(event) => setPaymentReference(event.target.value.slice(0, 80))} placeholder={tr("Enter the reference shown by your payment app", "भुक्तानी एपमा देखिएको सन्दर्भ लेख्नुहोस्")} autoComplete="off" /></label>
-              <a href={`https://wa.me/977${company.contact.whatsapp}?text=${encodeURIComponent(paymentText)}`} target="_blank" rel="noopener noreferrer" aria-disabled={paymentReference.trim().length < 3} onClick={(event) => { if (paymentReference.trim().length < 3) event.preventDefault(); }} className={`mt-3 block rounded-xl px-5 py-3 text-center font-extrabold text-white ${paymentReference.trim().length >= 3 ? "bg-emerald-600 hover:bg-emerald-700" : "cursor-not-allowed bg-slate-400"}`}>{tr("Send reference for manual verification →", "म्यानुअल जाँचका लागि सन्दर्भ पठाउनुहोस् →")}</a>
+              <form onSubmit={sendPaymentReference} className="mt-5 space-y-3">
+                <label className="block text-sm font-bold text-slate-800">{tr("Payment transaction reference", "भुक्तानी कारोबार सन्दर्भ")}<input required minLength={4} maxLength={40} className={input} value={paymentReference} onChange={(event) => setPaymentReference(event.target.value.slice(0, 40))} placeholder={tr("Enter the reference shown by your payment app", "भुक्तानी एपमा देखिएको सन्दर्भ लेख्नुहोस्")} autoComplete="off" /></label>
+                <button type="submit" disabled={paymentClaimBusy || !!paymentClaimMessage || paymentReference.trim().length < 4} className="block w-full rounded-xl bg-emerald-700 px-5 py-3 text-center font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50">{paymentClaimBusy ? "Submitting…" : tr("Submit reference for verification", "जाँचका लागि सन्दर्भ पठाउनुहोस्")}</button>
+                {paymentClaimMessage && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{paymentClaimMessage}</p>}
+                {paymentClaimError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{paymentClaimError}</p>}
+              </form>
               <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-950">{tr("Sending a reference does not confirm payment. B&B staff must verify the funds in the bank or wallet account before changing the order to paid. Never share your PIN, password, or OTP.", "सन्दर्भ पठाउँदैमा भुक्तानी पुष्टि हुँदैन। अर्डरलाई भुक्तानी भएको बनाउनुअघि B&B कर्मचारीले बैंक वा वालेट खातामा रकम जाँच गर्नुपर्छ। PIN, पासवर्ड वा OTP कहिल्यै नदिनुहोस्।")}</p>
               <button type="button" onClick={() => setQrOpen(false)} className="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 font-bold text-slate-700 hover:bg-slate-50">{tr("Close", "बन्द गर्नुहोस्")}</button>
             </section>
@@ -185,23 +222,23 @@ export default function CheckoutClient() {
           <legend className="text-lg font-black">{tr("Payment", "भुक्तानी")}</legend>
           <div className="mt-3 space-y-2">
             {(Object.keys(PAY_EN) as Pay[]).map((k) => (
-              <label key={k} className={`flex cursor-pointer items-center rounded-xl border-2 p-4 text-sm font-bold ${payment === k ? "border-amber-400 bg-amber-50" : "border-slate-200"}`}>
-                <input type="radio" name="payment" className="mr-3" checked={payment === k} onChange={() => setPayment(k)} />{tr(PAY_EN[k], PAY_NE[k])}
+              <label key={k} className={`flex cursor-pointer items-center rounded-xl border-2 p-4 text-sm font-bold ${payment === k ? "border-amber-400 bg-amber-50" : "border-slate-200"} ${k === "digital" && paymentAccounts.length === 0 ? "cursor-not-allowed opacity-50" : ""}`}>
+                <input type="radio" name="payment" className="mr-3" checked={payment === k} disabled={k === "digital" && paymentAccounts.length === 0} onChange={() => setPayment(k)} />{tr(PAY_EN[k], PAY_NE[k])}
               </label>
             ))}
           </div>
           {payment === "digital" ? (
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm font-bold">{tr("Choose where to pay", "कहाँ भुक्तानी गर्ने छान्नुहोस्")}</p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                {(Object.keys(QR_METHODS) as PaymentProvider[]).map((provider) => (
-                  <label key={provider} className={`cursor-pointer rounded-xl border-2 bg-white p-3 text-left ${paymentProvider === provider ? "border-emerald-500" : "border-slate-200"}`}>
-                    <input type="radio" name="paymentProvider" className="mr-2" checked={paymentProvider === provider} onChange={() => setPaymentProvider(provider)} />
-                    <span className="font-bold">{QR_METHODS[provider].label}</span>
-                    <span className="mt-1 block text-xs text-slate-600">{QR_METHODS[provider].payee}<br />{QR_METHODS[provider].detail}</span>
+              <p className="text-sm font-bold">{tr("Choose a verified B&B payment account", "B&B को प्रमाणित भुक्तानी खाता छान्नुहोस्")}</p>
+              {paymentAccounts.length === 0 ? <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{tr("Online payment is not configured. Please choose cash on delivery or pay at the shop.", "अनलाइन भुक्तानी सेट गरिएको छैन। डेलिभरीमा नगद वा पसलमा भुक्तानी छान्नुहोस्।")}</p> : <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {paymentAccounts.map((account) => (
+                  <label key={account.id} className={`cursor-pointer rounded-xl border-2 bg-white p-3 text-left ${selectedPaymentAccountId === account.id ? "border-emerald-500" : "border-slate-200"}`}>
+                    <input type="radio" name="paymentAccount" className="mr-2" checked={selectedPaymentAccountId === account.id} onChange={() => setSelectedPaymentAccountId(account.id)} />
+                    <span className="font-bold">{account.label}</span>
+                    <span className="mt-1 block text-xs text-slate-600">{account.method} · {account.payeeName}{account.accountNo ? <><br />{account.accountNo}</> : null}</span>
                   </label>
                 ))}
-              </div>
+              </div>}
               <p className="mt-3 text-xs leading-5 text-slate-600">{tr("The displayed QR is a static merchant QR. It does not contain the amount; your final amount must be confirmed by B&B and entered manually in the payment app. Orders with reference or unconfirmed prices must wait for our team before payment.", "देखाइएको QR स्थिर व्यापारी QR हो। यसमा रकम हुँदैन; अन्तिम रकम B&B बाट पुष्टि भएपछि भुक्तानी एपमा आफैँ राख्नुहोस्। सन्दर्भ वा अपुष्ट मूल्य भएका अर्डरमा हाम्रो टोलीको पुष्टि पर्खनुहोस्।")}</p>
             </div>
           ) : <p className="mt-2 text-xs text-slate-500">{tr("Payment is collected by our team after the order is confirmed.", "अर्डर पुष्टि भएपछि हाम्रो टोलीले भुक्तानी लिन्छ।")}</p>}
