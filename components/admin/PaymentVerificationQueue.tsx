@@ -28,7 +28,18 @@ export default function PaymentVerificationQueue() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/payments", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not load payment submissions.");
+        if (active) setRows(data.submissions ?? []);
+      })
+      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Could not load payment submissions."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   async function review(id: string, action: "verify" | "reject") {
     setBusy(id); setError(""); setMessage("");
