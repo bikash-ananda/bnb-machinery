@@ -23,6 +23,7 @@ describe("phonesMatch", () => {
   it("rejects different or too-short numbers", () => {
     expect(phonesMatch("9841234567", "9841234568")).toBe(false);
     expect(phonesMatch("123456", "123456")).toBe(false);
+    expect(phonesMatch("1234567", "1234567")).toBe(false);
   });
 });
 
