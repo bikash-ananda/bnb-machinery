@@ -15,7 +15,17 @@ export default function PaymentAccountsManager() {
     const response = await fetch("/api/admin/payment-accounts", { cache: "no-store" }); const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Could not load payment accounts."); setRows(data.accounts ?? []);
   }, []);
-  useEffect(() => { void load().catch((e) => setError(e instanceof Error ? e.message : "Could not load payment accounts.")); }, [load]);
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/payment-accounts", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not load payment accounts.");
+        if (active) setRows(data.accounts ?? []);
+      })
+      .catch((e) => { if (active) setError(e instanceof Error ? e.message : "Could not load payment accounts."); });
+    return () => { active = false; };
+  }, []);
   async function submit(e: FormEvent) {
     e.preventDefault(); setBusy(true); setError(""); setMessage("");
     try {
