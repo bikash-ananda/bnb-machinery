@@ -120,3 +120,11 @@ Repository implementation does not prove that every workflow has passed browser 
 - Do not start the bundled Caddy profile or alter shared VPS services.
 - Keep migrations additive and review the SQL before production execution.
 - A branch/CI pass is not a production deployment or browser acceptance sign-off.
+
+## Phase 0 — CI build correction (2026-11-27)
+
+The first CI run for PR #11 passed TypeScript, ESLint (warnings only), and all 105 unit tests, but the production build failed while prerendering `/brands` and `/sitemap.xml`. Both paths read PostgreSQL-backed catalog data during static generation, while the CI build has no production database connection.
+
+The phase branch now marks the brands page and sitemap as request-rendered using `dynamic = "force-dynamic"`. This keeps database access at request time and avoids requiring production credentials during CI builds. The canonical catalog fallback label was also changed from an unverified business name to the neutral `Unspecified brand`.
+
+These changes have been committed to the existing phase branch. A new CI run must verify the fix; no production deployment or database operation was performed.
