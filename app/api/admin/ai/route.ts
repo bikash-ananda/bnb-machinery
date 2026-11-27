@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { canUseAgent } from "@/lib/ai/agents";
+import { canAccessPlatformAgent } from "@/lib/ai/registry";
 import { adminApi } from "@/lib/server/admin-api";
 import { rateLimited } from "@/lib/server/ai";
 import { adminAssistantPrompt } from "@/lib/server/ai-agent/prompt";
@@ -38,7 +39,9 @@ export async function POST(request: Request) {
   if (!valid.success) return NextResponse.json({ error: "invalid_request" }, { status: 400 });
 
   const { agentId, messages } = valid.data;
-  if (!canUseAgent(access.session.role, agentId)) return NextResponse.json({ error: "not_allowed" }, { status: 403 });
+  if (!canUseAgent(access.session.role, agentId) || !canAccessPlatformAgent(agentId, "admin", access.session.role)) {
+    return NextResponse.json({ error: "not_allowed" }, { status: 403 });
+  }
   const providerStatus = getAIProviderStatus();
   if (!providerStatus.enabled) return NextResponse.json({ error: "ai_not_configured" }, { status: 503 });
 

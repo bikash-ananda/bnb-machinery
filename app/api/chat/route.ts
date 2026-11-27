@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { isAllowedOrigin } from "@/lib/server/auth";
+import { canAccessPlatformAgent } from "@/lib/ai/registry";
 import { rateLimited, systemPrompt } from "@/lib/server/ai";
 import { completeWithAI, getAIProviderStatus } from "@/lib/server/ai-agent/providers";
 import { retrieve } from "@/lib/bot/knowledge";
@@ -50,6 +51,9 @@ async function searchMachineryReferences(query: string): Promise<WebSource[]> {
 
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!canAccessPlatformAgent("customer_support", "website") || !canAccessPlatformAgent("product_discovery", "website")) {
+    return NextResponse.json({ error: "agent_unavailable" }, { status: 503 });
+  }
   if (rateLimited(request, "chat", 20)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   if (!getAIProviderStatus().enabled) return NextResponse.json({ error: "ai_disabled" }, { status: 503 });
