@@ -38,15 +38,22 @@ export const products = pgTable(
     mrpPaisa: paisa("mrp_paisa"),
     costPaisa: paisa("cost_paisa"),
     priceIncludesVat: boolean("price_includes_vat").notNull().default(true),
-    vatApplicable: boolean("vat_applicable").notNull().default(true),    taxCategory: text("tax_category").notNull().default("STANDARD"),    hsCode: text("hs_code"),
+    vatApplicable: boolean("vat_applicable").notNull().default(true),
+    taxCategory: text("tax_category").notNull().default("STANDARD"),
+    hsCode: text("hs_code"),
     reorderLevel: integer("reorder_level").notNull().default(0),
     isPublished: boolean("is_published").notNull().default(false),
-    isFeatured: boolean("is_featured").notNull().default(false),    trackStock: boolean("track_stock").notNull().default(false),
+    isFeatured: boolean("is_featured").notNull().default(false),
+    trackStock: boolean("track_stock").notNull().default(false),
     specs: jsonb("specs").$type<{ name: string; value: string }[]>().notNull().default([]),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("products_category_idx").on(t.categoryId), index("products_published_idx").on(t.isPublished), index("products_part_number_idx").on(t.partNumber)],
+  (t) => [
+    index("products_category_idx").on(t.categoryId),
+    index("products_published_idx").on(t.isPublished),
+    index("products_part_number_idx").on(t.partNumber),
+  ],
 );
 
 export const productImages = pgTable("product_images", {
