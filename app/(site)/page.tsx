@@ -24,7 +24,8 @@ export const metadata: Metadata = {
     "/",
   ),
 };
-export const revalidate = 60;
+// The homepage reads the live PostgreSQL catalogue. Render it per request so CI builds do not require production database access.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const all = await getShopProducts();
