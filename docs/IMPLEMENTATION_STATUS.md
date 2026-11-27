@@ -128,3 +128,8 @@ The first CI run for PR #11 passed TypeScript, ESLint (warnings only), and all 1
 The phase branch now marks the brands page and sitemap as request-rendered using `dynamic = "force-dynamic"`. This keeps database access at request time and avoids requiring production credentials during CI builds. The canonical catalog fallback label was also changed from an unverified business name to the neutral `Unspecified brand`.
 
 These changes have been committed to the existing phase branch. A new CI run must verify the fix; no production deployment or database operation was performed.
+
+
+## Phase 1 — additive catalog master fields (2026-11-27)
+
+Added explicit canonical catalog product part number and applications fields, indexed part-number search, and a product document metadata table. Documents default to PRIVATE and retain storage paths; no public document-serving endpoint is introduced in this migration. Existing inventory workflow fields are preserved. Migration `0010_product_part_numbers_documents` is additive and has not been applied to production.
