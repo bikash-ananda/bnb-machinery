@@ -133,3 +133,10 @@ These changes have been committed to the existing phase branch. A new CI run mus
 ## Phase 1 — additive catalog master fields (2026-11-27)
 
 Added explicit canonical catalog product part number and applications fields, indexed part-number search, and a product document metadata table. Documents default to PRIVATE and retain storage paths; no public document-serving endpoint is introduced in this migration. Existing inventory workflow fields are preserved. Migration `0010_product_part_numbers_documents` is additive and has not been applied to production.
+
+
+## Phase 1 — CI follow-up (2026-11-27)
+
+The next CI run passed typecheck, lint (warnings only) and all 105 unit tests, but the production build still prerendered the homepage. The homepage reads the live catalogue, and its review flow reaches a PostgreSQL-backed API during prerender. The homepage is now request-rendered with `dynamic = "force-dynamic"`; the CI workflow must confirm this correction before the phase is considered build-green.
+
+Additional catalog validation tests now cover part numbers and application lists. No production migration, merge or deployment was performed.
