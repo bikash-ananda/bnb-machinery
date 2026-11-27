@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "/brands/deli",
   ),
 };
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function DeliPage() {
   const all = await getShopProducts();
