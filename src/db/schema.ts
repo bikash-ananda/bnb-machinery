@@ -8,3 +8,4 @@ export * from "../modules/automation/schema";
 export * from "../modules/local-workflow/schema";
 export * from "../modules/support/schema";
 export * from "../modules/catalog/extras-schema";
+export * from "../modules/payments/schema";
